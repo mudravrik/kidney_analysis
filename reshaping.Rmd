@@ -23,4 +23,10 @@ for (i in 1:max(import_data$patient_code)) {
   import_data$visit_index[which(import_data$patient_code == i)] = c(1:length(import_data$visit_code[which(import_data$patient_code == i)]))
 }
 
+melted = melt(import_data, id=c("patient_code","visit_index"))
+casted = cast(melted, patient_code~variable+visit_index)
+
+write.xlsx(casted, "all_reshaped.xlsx")
+
+
 ```
