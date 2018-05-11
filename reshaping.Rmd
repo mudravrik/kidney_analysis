@@ -1,0 +1,26 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(xlsx)
+library(reshape)
+```
+
+```{r}
+import_data = read.xlsx(file = "access_all_import.xlsx", sheetIndex = 1, encoding = "UTF-8", header = TRUE, stringsAsFactors=FALSE)
+
+import_data$visit_code = as.numeric(import_data$Пациенты_Код.визита)
+import_data$patient_code = as.integer(import_data$Пациенты_Код.пациента)
+
+import_data = import_data[order(import_data$patient_code, import_data$Пациенты_Дата.визита),]
+
+import_data$visit_index = NA
+
+
+for (i in 1:max(import_data$patient_code)) {
+  import_data$visit_index[which(import_data$patient_code == i)] = c(1:length(import_data$visit_code[which(import_data$patient_code == i)]))
+}
+
+```
