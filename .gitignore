@@ -6,3 +6,5 @@
 *.accdb
 *.laccdb
 reshaping.Rmd
+*.nb.html
+*.docx
