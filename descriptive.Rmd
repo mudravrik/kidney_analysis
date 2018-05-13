@@ -1,0 +1,159 @@
+---
+title: "Basic descriptive stats"
+output: html_notebook
+---
+
+```{r}
+source("reshaper.R", encoding = "UTF-8")
+```
+
+```{r}
+library(purrr)
+library(magrittr)
+library(stringi)
+library(stringr)
+```
+
+```{r}
+DEF_COLOR = "lightblue"
+```
+
+
+Тут всякие технические моменты, не интересно.
+```{r}
+full_data = access_import_reshape("first_iter_vars.xlsx")
+
+names(full_data) = stri_trans_general(names(full_data), "russian-latin/bgn")
+
+full_data = map_df(full_data, as.character) #pretty shity move, i know
+```
+
+
+
+Проверим, сколько же визитов на сколько пациентов было
+```{r}
+full_data$max_visit_index = map_dbl(1:nrow(full_data),
+                                    ~ full_data[.x,282:289] %>% is.na(.) %>% `!` %>% sum())  # TODO fix hardcoded 'visit_index'es
+
+table(full_data$max_visit_index)
+
+```
+Таблица "Сколько пациентов с указанным сверху числом визитов"
+Картинка про тоже самое:
+
+```{r}
+barplot(table(full_data$max_visit_index), xlab = "Number of visits", ylab = " Number of patients", col = DEF_COLOR)
+```
+Упс. Придется отправить 53 пациента пока в мусор, раз уж у нас проспективное исследование.
+
+```{r}
+cleaned_data = full_data[full_data$max_visit_index > 1, ]
+
+cleaned_data[ ,str_detect(names(cleaned_data), "Data.vizita")] = apply(cleaned_data[ ,str_detect(names(cleaned_data), "Data.vizita")], 2, as.numeric)
+
+
+```
+
+Посмотрим продолжительность наблюдений
+
+```{r}
+cleaned_data$follow_up_length = map_dbl(1:nrow(cleaned_data),
+                                        ~cleaned_data[.x, 18:25] %>% max(., na.rm = T) %>% as.Date(., origin = "1970-01-01") -
+                                          cleaned_data[.x, 18:25] %>% min(., na.rm = T) %>% as.Date(., origin = "1970-01-01")
+)
+
+quantile(cleaned_data$follow_up_length)
+```
+
+```{r}
+hist(cleaned_data$follow_up_length, breaks = 10, main = "Follow-up length distribution", xlab = "Follow-up length, days", ylab = "Number of patients", col = DEF_COLOR)
+```
+
+Посмотрим промежутки между визитами
+
+```{r}
+visits_lenth = map(8:2,
+                   ~cleaned_data[ ,sprintf("Data.vizita_%i", .x)] - cleaned_data[ ,sprintf("Data.vizita_%i", .x-1)]
+                      ) %>% unlist() %>% na.omit()
+
+
+quantile(visits_lenth)
+
+```
+```{r}
+hist(visits_lenth, breaks = seq(0, 630, 30), main = "Time-between-visits distribution", xlab = "Time between visits, days", ylab = "Number of visits", col = DEF_COLOR, axes = F)
+axis(2)
+axis(1, at = seq(0, 630, 30))
+```
+Не, вообще, нормальное распределение - это прикольно. Только не когда речь идет о промежутках между визитам. Как-то получается, что пациенты к вам вообще случайно приходили, а не по расписанию.¯\_(ツ)_/¯
+
+
+
+Ладно, дальше речь вообще только о первом визите
+
+```{r}
+row.names(cleaned_data) = cleaned_data$patient_code
+first_visit_data = cleaned_data[ ,str_detect(names(cleaned_data), "_1$")]
+
+first_visit_data$clear_drug = str_split(first_visit_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist() %>% as.factor()
+```
+
+
+Антикоагулянт (Проверьте переменную! Использовалась "Эпидемиологические данные.Антикоагулянт")
+
+```{r}
+table(first_visit_data$clear_drug)
+```
+
+```{r fig.width=9}
+barplot(table(first_visit_data$clear_drug), col = DEF_COLOR, main = "Number of patient by drug", ylab = "Number of patient")
+```
+
+
+
+Возраст
+```{r}
+
+first_visit_data$Polnykh.let_1 %<>% as.numeric()
+
+hist(first_visit_data$Polnykh.let_1, col = DEF_COLOR, main = "Age distribution", xlab = "Age, years", ylab = "Number of patients")
+```
+
+
+```{r}
+shapiro.test(first_visit_data$Polnykh.let_1)
+
+sprintf("Средний возраст: %f; Среднеквадратичное отклонение: %f", mean(first_visit_data$Polnykh.let_1), sd(first_visit_data$Polnykh.let_1))
+
+```
+
+По препаратам:
+```{r}
+for(i in levels(first_visit_data$clear_drug)) {
+  age_vec = first_visit_data$Polnykh.let_1[first_visit_data$clear_drug == i]
+  sprintf(
+    "Препарат: %s; Средний возраст: %f\u00B1%f",
+    i,
+    mean(age_vec),
+    sd(age_vec)
+  ) %>% print()
+}
+```
+
+
+```{r}
+kruskal.test(first_visit_data$Polnykh.let_1~first_visit_data$clear_drug)
+```
+Достоверных различий нет
+
+
+
+
+
+
+
+
+```{r}
+names(first_visit_data)
+```
+
