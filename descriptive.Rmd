@@ -16,6 +16,7 @@ library(purrr)
 library(magrittr)
 library(stringi)
 library(stringr)
+library(PMCMR)
 ```
 
 ```{r}
@@ -151,13 +152,77 @@ kruskal.test(first_visit_data$Polnykh.let_1~first_visit_data$clear_drug)
 Достоверных различий нет
 
 
+```{r}
+table(first_visit_data$Pol.patsiyenta_1)
+prop.table(table(first_visit_data$Pol.patsiyenta_1))
+```
 
+```{r}
+table(first_visit_data$Pol.patsiyenta_1, first_visit_data$clear_drug)
+prop.table(table(first_visit_data$Pol.patsiyenta_1, first_visit_data$clear_drug), 2)
+```
 
+```{r}
+fisher.test(first_visit_data$Pol.patsiyenta_1, first_visit_data$clear_drug)
+```
 
+```{r fig.width=10}
+par(mar = c(5,5,5,5))
+barplot(prop.table(table(first_visit_data$Pol.patsiyenta_1, first_visit_data$clear_drug), 2), col = c(DEF_COLOR, "lightgreen"), main = "Gender distribution by drugs", ylab = "Gender proportion")
 
+legend(x = 5, y =1, legend=c("Female", "Male"),
+       col = c(DEF_COLOR, "lightgreen"), pch = 15, xpd = TRUE, inset=c(-0.50,0))
+```
 
 
 ```{r}
-names(first_visit_data)
+table(first_visit_data$Forma.FP_1)
+prop.table(table(first_visit_data$Forma.FP_1))
+```
+
+```{r}
+table(first_visit_data$Forma.FP_1, first_visit_data$clear_drug)
+prop.table(table(first_visit_data$Forma.FP_1, first_visit_data$clear_drug), 2)
+```
+
+```{r}
+fisher.test(first_visit_data$Forma.FP_1, first_visit_data$clear_drug)
+```
+
+```{r fig.width=12}
+par(mar = c(5,5,5,13))
+barplot(prop.table(table(first_visit_data$Forma.FP_1, first_visit_data$clear_drug), 2), col = c(DEF_COLOR, "lightgreen", "lightcoral", "blueviolet"), main = "AF type distribution by drugs", ylab = "AF type proportion")
+
+legend(x = 5, y =1, legend=row.names(prop.table(table(first_visit_data$Forma.FP_1, first_visit_data$clear_drug), 2)),
+       col = c(DEF_COLOR, "lightgreen", "lightcoral", "blueviolet"), pch = 15, xpd = TRUE, inset=c(-0.50,0))
+```
+
+```{r}
+table(first_visit_data$Ball.po.CHA2DS2VASc_1)
+
+quantile(first_visit_data$Ball.po.CHA2DS2VASc_1 %>% as.numeric())
+```
+
+
+```{r}
+par(mfrow = c(2,2))
+for (drug_name in levels(first_visit_data$clear_drug)) {
+  hist(first_visit_data$Ball.po.CHA2DS2VASc_1[first_visit_data$clear_drug == drug_name] %>% as.numeric(.), breaks = 1:8, ylim = c(0,9), col = DEF_COLOR, main = drug_name, xlab = "CHA2DS2VASc", ylab = "Number of patients")
+}
+
+```
+
+
+```{r}
+fisher.test(first_visit_data$Ball.po.CHA2DS2VASc_1, first_visit_data$clear_drug, workspace = 2000000)
+```
+Тут довольно корявый пост-хок анализ. Мы не хотим баллы объединить в большие группы типа "меньше двух", "два", "больше трех" по примеру 10.1161/CIRCULATIONAHA.113.003628 ?
+```{r}
+posthoc.kruskal.nemenyi.test(first_visit_data$Ball.po.CHA2DS2VASc_1, first_visit_data$clear_drug)
+```
+
+
+```{r}
+# names(first_visit_data)
 ```
 
