@@ -17,6 +17,8 @@ library(magrittr)
 library(stringi)
 library(stringr)
 library(PMCMR)
+library(RColorBrewer)
+library(rcompanion)
 ```
 
 ```{r}
@@ -38,7 +40,7 @@ full_data = map_df(full_data, as.character) #pretty shity move, i know
 Проверим, сколько же визитов на сколько пациентов было
 ```{r}
 full_data$max_visit_index = map_dbl(1:nrow(full_data),
-                                    ~ full_data[.x,282:289] %>% is.na(.) %>% `!` %>% sum())  # TODO fix hardcoded 'visit_index'es
+                                    ~ full_data[.x, 282:289] %>% is.na(.) %>% `!` %>% sum())  # TODO fix hardcoded 'visit_index'es
 
 table(full_data$max_visit_index)
 
@@ -52,9 +54,9 @@ barplot(table(full_data$max_visit_index), xlab = "Number of visits", ylab = " Nu
 Упс. Придется отправить 53 пациента пока в мусор, раз уж у нас проспективное исследование.
 
 ```{r}
-cleaned_data = full_data[full_data$max_visit_index > 1, ]
+cleaned_data = full_data[full_data$max_visit_index > 1,]
 
-cleaned_data[ ,str_detect(names(cleaned_data), "Data.vizita")] = apply(cleaned_data[ ,str_detect(names(cleaned_data), "Data.vizita")], 2, as.numeric)
+cleaned_data[, str_detect(names(cleaned_data), "Data.vizita")] = apply(cleaned_data[, str_detect(names(cleaned_data), "Data.vizita")], 2, as.numeric)
 
 
 ```
@@ -62,31 +64,47 @@ cleaned_data[ ,str_detect(names(cleaned_data), "Data.vizita")] = apply(cleaned_d
 Посмотрим продолжительность наблюдений
 
 ```{r}
-cleaned_data$follow_up_length = map_dbl(1:nrow(cleaned_data),
-                                        ~cleaned_data[.x, 18:25] %>% max(., na.rm = T) %>% as.Date(., origin = "1970-01-01") -
-                                          cleaned_data[.x, 18:25] %>% min(., na.rm = T) %>% as.Date(., origin = "1970-01-01")
+cleaned_data$follow_up_length = map_dbl(
+  1:nrow(cleaned_data),
+  ~ cleaned_data[.x, 18:25] %>% max(., na.rm = T) %>% as.Date(., origin = "1970-01-01") -
+    cleaned_data[.x, 18:25] %>% min(., na.rm = T) %>% as.Date(., origin = "1970-01-01")
 )
 
 quantile(cleaned_data$follow_up_length)
 ```
 
 ```{r}
-hist(cleaned_data$follow_up_length, breaks = 10, main = "Follow-up length distribution", xlab = "Follow-up length, days", ylab = "Number of patients", col = DEF_COLOR)
+hist(
+  cleaned_data$follow_up_length,
+  breaks = 10,
+  main = "Follow-up length distribution",
+  xlab = "Follow-up length, days",
+  ylab = "Number of patients",
+  col = DEF_COLOR
+)
 ```
 
 Посмотрим промежутки между визитами
 
 ```{r}
 visits_lenth = map(8:2,
-                   ~cleaned_data[ ,sprintf("Data.vizita_%i", .x)] - cleaned_data[ ,sprintf("Data.vizita_%i", .x-1)]
-                      ) %>% unlist() %>% na.omit()
+                   ~ cleaned_data[, sprintf("Data.vizita_%i", .x)] - cleaned_data[, sprintf("Data.vizita_%i", .x -
+                                                                                              1)]) %>% unlist() %>% na.omit()
 
 
 quantile(visits_lenth)
 
 ```
 ```{r}
-hist(visits_lenth, breaks = seq(0, 630, 30), main = "Time-between-visits distribution", xlab = "Time between visits, days", ylab = "Number of visits", col = DEF_COLOR, axes = F)
+hist(
+  visits_lenth,
+  breaks = seq(0, 630, 30),
+  main = "Time-between-visits distribution",
+  xlab = "Time between visits, days",
+  ylab = "Number of visits",
+  col = DEF_COLOR,
+  axes = F
+)
 axis(2)
 axis(1, at = seq(0, 630, 30))
 ```
@@ -98,7 +116,7 @@ axis(1, at = seq(0, 630, 30))
 
 ```{r}
 row.names(cleaned_data) = cleaned_data$patient_code
-first_visit_data = cleaned_data[ ,str_detect(names(cleaned_data), "_1$")]
+first_visit_data = cleaned_data[, str_detect(names(cleaned_data), "_1$")]
 
 first_visit_data$clear_drug = str_split(first_visit_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist() %>% as.factor()
 ```
@@ -111,7 +129,12 @@ table(first_visit_data$clear_drug)
 ```
 
 ```{r fig.width=9}
-barplot(table(first_visit_data$clear_drug), col = DEF_COLOR, main = "Number of patient by drug", ylab = "Number of patient")
+barplot(
+  table(first_visit_data$clear_drug),
+  col = DEF_COLOR,
+  main = "Number of patient by drug",
+  ylab = "Number of patient"
+)
 ```
 
 
@@ -119,16 +142,27 @@ barplot(table(first_visit_data$clear_drug), col = DEF_COLOR, main = "Number of p
 Возраст
 ```{r}
 
+
 first_visit_data$Polnykh.let_1 %<>% as.numeric()
 
-hist(first_visit_data$Polnykh.let_1, col = DEF_COLOR, main = "Age distribution", xlab = "Age, years", ylab = "Number of patients")
+hist(
+  first_visit_data$Polnykh.let_1,
+  col = DEF_COLOR,
+  main = "Age distribution",
+  xlab = "Age, years",
+  ylab = "Number of patients"
+)
 ```
 
 
 ```{r}
 shapiro.test(first_visit_data$Polnykh.let_1)
 
-sprintf("Средний возраст: %f; Среднеквадратичное отклонение: %f", mean(first_visit_data$Polnykh.let_1), sd(first_visit_data$Polnykh.let_1))
+sprintf(
+  "Средний возраст: %f; Среднеквадратичное отклонение: %f",
+  mean(first_visit_data$Polnykh.let_1),
+  sd(first_visit_data$Polnykh.let_1)
+)
 
 ```
 
@@ -136,12 +170,10 @@ sprintf("Средний возраст: %f; Среднеквадратичное
 ```{r}
 for(i in levels(first_visit_data$clear_drug)) {
   age_vec = first_visit_data$Polnykh.let_1[first_visit_data$clear_drug == i]
-  sprintf(
-    "Препарат: %s; Средний возраст: %f\u00B1%f",
-    i,
-    mean(age_vec),
-    sd(age_vec)
-  ) %>% print()
+  sprintf("Препарат: %s; Средний возраст: %f\u00B1%f",
+          i,
+          mean(age_vec),
+          sd(age_vec)) %>% print()
 }
 ```
 
@@ -167,11 +199,29 @@ fisher.test(first_visit_data$Pol.patsiyenta_1, first_visit_data$clear_drug)
 ```
 
 ```{r fig.width=10}
-par(mar = c(5,5,5,5))
-barplot(prop.table(table(first_visit_data$Pol.patsiyenta_1, first_visit_data$clear_drug), 2), col = c(DEF_COLOR, "lightgreen"), main = "Gender distribution by drugs", ylab = "Gender proportion")
+par(mar = c(5, 5, 5, 5))
+barplot(
+  prop.table(
+    table(
+      first_visit_data$Pol.patsiyenta_1,
+      first_visit_data$clear_drug
+    ),
+    2
+  ),
+  col = c(DEF_COLOR, "lightgreen"),
+  main = "Gender distribution by drugs",
+  ylab = "Gender proportion"
+)
 
-legend(x = 5, y =1, legend=c("Female", "Male"),
-       col = c(DEF_COLOR, "lightgreen"), pch = 15, xpd = TRUE, inset=c(-0.50,0))
+legend(
+  x = 5,
+  y = 1,
+  legend = c("Female", "Male"),
+  col = c(DEF_COLOR, "lightgreen"),
+  pch = 15,
+  xpd = TRUE,
+  inset = c(-0.50, 0)
+)
 ```
 
 
@@ -182,7 +232,8 @@ prop.table(table(first_visit_data$Forma.FP_1))
 
 ```{r}
 table(first_visit_data$Forma.FP_1, first_visit_data$clear_drug)
-prop.table(table(first_visit_data$Forma.FP_1, first_visit_data$clear_drug), 2)
+prop.table(table(first_visit_data$Forma.FP_1, first_visit_data$clear_drug),
+           2)
 ```
 
 ```{r}
@@ -190,11 +241,29 @@ fisher.test(first_visit_data$Forma.FP_1, first_visit_data$clear_drug)
 ```
 
 ```{r fig.width=12}
-par(mar = c(5,5,5,13))
-barplot(prop.table(table(first_visit_data$Forma.FP_1, first_visit_data$clear_drug), 2), col = c(DEF_COLOR, "lightgreen", "lightcoral", "blueviolet"), main = "AF type distribution by drugs", ylab = "AF type proportion")
+par(mar = c(5, 5, 5, 13))
+barplot(
+  prop.table(
+    table(first_visit_data$Forma.FP_1, first_visit_data$clear_drug),
+    2
+  ),
+  col = c(DEF_COLOR, "lightgreen", "lightcoral", "blueviolet"),
+  main = "AF type distribution by drugs",
+  ylab = "AF type proportion"
+)
 
-legend(x = 5, y =1, legend=row.names(prop.table(table(first_visit_data$Forma.FP_1, first_visit_data$clear_drug), 2)),
-       col = c(DEF_COLOR, "lightgreen", "lightcoral", "blueviolet"), pch = 15, xpd = TRUE, inset=c(-0.50,0))
+legend(
+  x = 5,
+  y = 1,
+  legend = row.names(prop.table(
+    table(first_visit_data$Forma.FP_1, first_visit_data$clear_drug),
+    2
+  )),
+  col = c(DEF_COLOR, "lightgreen", "lightcoral", "blueviolet"),
+  pch = 15,
+  xpd = TRUE,
+  inset = c(-0.50, 0)
+)
 ```
 
 ```{r}
@@ -205,9 +274,17 @@ quantile(first_visit_data$Ball.po.CHA2DS2VASc_1 %>% as.numeric())
 
 
 ```{r}
-par(mfrow = c(2,2))
+par(mfrow = c(2, 2))
 for (drug_name in levels(first_visit_data$clear_drug)) {
-  hist(first_visit_data$Ball.po.CHA2DS2VASc_1[first_visit_data$clear_drug == drug_name] %>% as.numeric(.), breaks = 1:8, ylim = c(0,9), col = DEF_COLOR, main = drug_name, xlab = "CHA2DS2VASc", ylab = "Number of patients")
+  hist(
+    first_visit_data$Ball.po.CHA2DS2VASc_1[first_visit_data$clear_drug == drug_name] %>% as.numeric(.),
+    breaks = 1:8,
+    ylim = c(0, 9),
+    col = DEF_COLOR,
+    main = drug_name,
+    xlab = "CHA2DS2VASc",
+    ylab = "Number of patients"
+  )
 }
 
 ```
@@ -216,13 +293,204 @@ for (drug_name in levels(first_visit_data$clear_drug)) {
 ```{r}
 fisher.test(first_visit_data$Ball.po.CHA2DS2VASc_1, first_visit_data$clear_drug, workspace = 2000000)
 ```
+
+&nbsp;
 Тут довольно корявый пост-хок анализ. Мы не хотим баллы объединить в большие группы типа "меньше двух", "два", "больше трех" по примеру 10.1161/CIRCULATIONAHA.113.003628 ?
 ```{r}
-posthoc.kruskal.nemenyi.test(first_visit_data$Ball.po.CHA2DS2VASc_1, first_visit_data$clear_drug)
+pairwiseNominalIndependence(table(first_visit_data$clear_drug, first_visit_data$Ball.po.CHA2DS2VASc_1), fisher = T, gtest = F, chisq = F)
+```
+
+&nbsp;
+Попробуем категоризовать chads
+```{r}
+first_visit_data$Ball.po.CHA2DS2VASc_1 %<>% as.numeric()
+
+first_visit_data$chads_cat = map_chr(first_visit_data$Ball.po.CHA2DS2VASc_1, ~{
+  if(.x < 2){
+    "<2"
+  }else if(.x == 2){
+    "2"
+  }else{
+    "2<"
+  }
+})
+
+first_visit_data$chads_cat %<>% as.factor(.)
+
+levels(first_visit_data$chads_cat) = c("<2", "2", ">2")
+```
+
+```{r}
+table(first_visit_data$clear_drug, first_visit_data$chads_cat)
+```
+
+```{r}
+fisher.test(first_visit_data$clear_drug, first_visit_data$chads_cat)
+```
+
+```{r fig.width=12}
+par(mar = c(5, 5, 5, 13))
+barplot(
+  prop.table(
+    table(first_visit_data$chads_cat, first_visit_data$clear_drug),
+    2
+  ),
+  col = c(DEF_COLOR, "lightgreen", "lightcoral"),
+  main = "CHA2DS2VASc groups by drugs",
+  ylab = "CHA2DS2VASc groups"
+)
+
+legend(
+  x = 5,
+  y = 1,
+  legend = c("<2 CHA2DS2VASc", "2 CHA2DS2VASc", ">2 CHA2DS2VASc"),
+  col = c(DEF_COLOR, "lightgreen", "lightcoral"),
+  pch = 15,
+  xpd = TRUE,
+  inset = c(-0.50, 0)
+)
+```
+
+```{r}
+pairwiseNominalIndependence(table(first_visit_data$clear_drug, first_visit_data$chads_cat), fisher = T, gtest = F, chisq = F)
+```
+
+Ну, кажется, прадакса от эликвиса отличается даже по скорректированному р-value.
+&nbsp;
+&nbsp;
+Перейдем к HAS-BLED
+```{r}
+first_visit_data$Ball.po.HAS.BLED_1 %<>% as.numeric()
+```
+
+```{r}
+table(first_visit_data$Ball.po.HAS.BLED_1)
+```
+
+
+
+```{r}
+barplot(first_visit_data$Ball.po.HAS.BLED_1 %>% table(),
+        col = DEF_COLOR,
+        ylab = "Number of patients",
+        main = "HAS-BLED distribution")
 ```
 
 
 ```{r}
-# names(first_visit_data)
+table(first_visit_data$Ball.po.HAS.BLED_1, first_visit_data$clear_drug)
+```
+
+```{r fig.width=10}
+par(mar =c(5,5,5,5))
+
+barplot(table(first_visit_data$Ball.po.HAS.BLED_1, first_visit_data$clear_drug) %>% prop.table(., 2),
+        col = brewer.pal(n = first_visit_data$Ball.po.HAS.BLED_1 %>% unique() %>% length, "Blues"),
+        main = "HAS-BLED distribution by drugs",
+        ylab = "HAS-BLED proportion")
+legend(
+  x = 5,
+  y = 1,
+  legend = 4:0,
+  col = brewer.pal(n = first_visit_data$Ball.po.HAS.BLED_1 %>% unique() %>% length, "Blues") %>% rev(),
+  pch = 15,
+  xpd = TRUE,
+  inset = c(-0.50, 0)
+)
+```
+
+```{r}
+pairwiseNominalIndependence(table(first_visit_data$clear_drug, first_visit_data$Ball.po.HAS.BLED_1), fisher = T, gtest = F, chisq = F)
+```
+Тут вроде все нормально.
+&nbsp;
+Займемся креатинином и компанией
+```{r}
+names(first_visit_data)[6] = "creatinine"
+
+first_visit_data$creatinine %<>% as.numeric()
+```
+
+
+```{R}
+hist(first_visit_data$creatinine,
+     col = DEF_COLOR,
+     breaks = 20,
+     xlab = "Creatinine",
+     ylab = "Number of patients",
+     main = "Creatinine distribution")
+```
+Там у 22-го креатинин 426, это законно?
+&nbsp;
+```{r}
+shapiro.test(first_visit_data$creatinine)
+quantile(first_visit_data$creatinine, na.rm = T)
+```
+
+```{r}
+kruskal.test(first_visit_data$creatinine~first_visit_data$clear_drug)
+```
+
+```{r fig.width=10}
+boxplot(first_visit_data$creatinine~first_visit_data$clear_drug,
+        ylab = "Creatinine",
+        main = "Creatinine distribution by drugs",
+        col = DEF_COLOR)
+```
+Не отличались, и слава богу.  
+&nbsp;
+&nbsp;
+
+СКФ 
+```{R}
+first_visit_data$SKF.CKD.EPI_1 %<>% as.numeric()
+
+hist(first_visit_data$SKF.CKD.EPI_1,
+     col = DEF_COLOR,
+     breaks = 20,
+     xlab = "CKD_EPI",
+     ylab = "Number of patients",
+     main = "Creatinine distribution")
+```
+И СКФ 10 у того же.
+&nbsp;
+```{r}
+shapiro.test(first_visit_data$SKF.CKD.EPI_1)
+sprintf(
+  "Средний CKD-EPI: %f; Среднеквадратичное отклонение: %f",
+  mean(first_visit_data$SKF.CKD.EPI_1, na.rm = T),
+  sd(first_visit_data$SKF.CKD.EPI_1, na.rm = T)
+)
+
+```
+
+По препаратам:
+```{r}
+for(i in levels(first_visit_data$clear_drug)) {
+  creat_vec = first_visit_data$SKF.CKD.EPI_1[first_visit_data$clear_drug == i]
+  sprintf("Препарат: %s; Средний CKD-EPI: %f\u00B1%f",
+          i,
+          mean(creat_vec, na.rm = T),
+          sd(creat_vec, na.rm = T)) %>% print()
+}
+```
+
+
+```{r}
+kruskal.test(first_visit_data$SKF.CKD.EPI_1~first_visit_data$clear_drug)
+pairwise.wilcox.test(first_visit_data$SKF.CKD.EPI_1, first_visit_data$clear_drug)
+```
+
+```{r fig.width=10}
+boxplot(first_visit_data$SKF.CKD.EPI_1~first_visit_data$clear_drug,
+        ylab = "CKD-EPI",
+        main = "CKD-EPI distribution by drugs",
+        col = DEF_COLOR)
+```
+У вас опять прадакса с эликвисом отличаются.
+
+
+```{r}
+names(first_visit_data)
 ```
 
