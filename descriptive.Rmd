@@ -489,6 +489,160 @@ boxplot(first_visit_data$SKF.CKD.EPI_1~first_visit_data$clear_drug,
 ```
 У вас опять прадакса с эликвисом отличаются.
 
+&nbsp;
+&nbsp;
+
+Клиренс
+```{R}
+first_visit_data$KK.Kokrofta.Golta_1 %<>% as.numeric()
+
+hist(first_visit_data$KK.Kokrofta.Golta_1,
+     col = DEF_COLOR,
+     breaks = 20,
+     xlab = "CKD_EPI",
+     ylab = "Number of patients",
+     main = "Creatinine distribution")
+```
+И СКФ 10 у того же.
+&nbsp;
+```{r}
+shapiro.test(first_visit_data$KK.Kokrofta.Golta_1)
+sprintf(
+  "Средний CKD-EPI: %f; Среднеквадратичное отклонение: %f",
+  mean(first_visit_data$KK.Kokrofta.Golta_1, na.rm = T),
+  sd(first_visit_data$KK.Kokrofta.Golta_1, na.rm = T)
+)
+
+```
+
+По препаратам:
+```{r}
+for(i in levels(first_visit_data$clear_drug)) {
+  creat_vec = first_visit_data$KK.Kokrofta.Golta_1[first_visit_data$clear_drug == i]
+  sprintf("Препарат: %s; Средний CKD-EPI: %f\u00B1%f",
+          i,
+          mean(creat_vec, na.rm = T),
+          sd(creat_vec, na.rm = T)) %>% print()
+}
+```
+
+
+```{r}
+kruskal.test(first_visit_data$KK.Kokrofta.Golta_1~first_visit_data$clear_drug)
+pairwise.wilcox.test(first_visit_data$KK.Kokrofta.Golta_1, first_visit_data$clear_drug)
+```
+
+```{r fig.width=10}
+boxplot(first_visit_data$KK.Kokrofta.Golta_1~first_visit_data$clear_drug,
+        ylab = "Creatinine clearance",
+        main = "Creatinine clearance distribution by drugs",
+        col = DEF_COLOR)
+```
+Тут тоже чть различия между прадаксой и варфарином.
+
+&nbsp;  
+&nbsp;  
+### Теперь прочие параметры коротко.
+
+&nbsp;  
+
+ГБ
+```{r}
+first_visit_data$GB_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+fisher.test(first_visit_data$clear_drug, first_visit_data$GB_1)
+```
+&nbsp;  
+Неконтроллируемая ГБ
+```{r}
+first_visit_data$Nekontroliruyemaya.GB_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+fisher.test(first_visit_data$clear_drug, first_visit_data$GB_1)
+```
+&nbsp;  
+Сахарный диабет
+```{r}
+first_visit_data$SD_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+fisher.test(first_visit_data$clear_drug, first_visit_data$SD_1)
+```
+&nbsp;  
+Хсн
+```{r}
+first_visit_data$KHSN_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+fisher.test(first_visit_data$clear_drug, first_visit_data$KHSN_1)
+```
+&nbsp;  
+Курение
+```{r}
+first_visit_data$Kureniye_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+fisher.test(first_visit_data$clear_drug, first_visit_data$Kureniye_1)
+```
+
+&nbsp;  
+ИБС
+```{r}
+first_visit_data$IBS_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+fisher.test(first_visit_data$clear_drug, first_visit_data$IBS_1)
+```
+
+&nbsp;  
+Сосудистые заболевания
+```{r}
+first_visit_data$Sosudistyye.zabolevaniya_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+fisher.test(first_visit_data$clear_drug, first_visit_data$Sosudistyye.zabolevaniya_1)
+```
+
+&nbsp;  
+ЯБЖ
+```{r}
+first_visit_data$YABZH.DPK_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+fisher.test(first_visit_data$clear_drug, first_visit_data$YABZH.DPK_1)
+```
+
+&nbsp;  
+МКБ
+```{r}
+first_visit_data$MKB_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+fisher.test(first_visit_data$clear_drug, first_visit_data$MKB_1)
+```
+
+&nbsp;  
+Курение
+```{r}
+first_visit_data$Alkogolizm_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+# fisher.test(first_visit_data$clear_drug, first_visit_data$MKB_1)
+```
+
+&nbsp;  
+Алкоголизм
+```{r}
+first_visit_data$Alkogolizm_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+# fisher.test(first_visit_data$clear_drug, first_visit_data$MKB_1)
+```
+
+&nbsp;  
+Амиодарон
+```{r}
+first_visit_data$Amiodaron_1[is.na(first_visit_data$Amiodaron_1)] = "Нет"
+first_visit_data$Amiodaron_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+fisher.test(first_visit_data$clear_drug, first_visit_data$Amiodaron_1)
+```
+
+&nbsp;  
+Аспирин
+```{r}
+first_visit_data$Aspirin_1[is.na(first_visit_data$Aspirin_1)] = "Нет"
+first_visit_data$Aspirin_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+fisher.test(first_visit_data$clear_drug, first_visit_data$Aspirin_1)
+```
+
+&nbsp;  
+Другие антиагреганты
+```{r}
+first_visit_data$Drugiye.antiagreganty_1[is.na(first_visit_data$Drugiye.antiagreganty_1)] = "Нет"
+first_visit_data$Drugiye.antiagreganty_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+fisher.test(first_visit_data$clear_drug, first_visit_data$Drugiye.antiagreganty_1)
+```
+
+
 
 ```{r}
 names(first_visit_data)
