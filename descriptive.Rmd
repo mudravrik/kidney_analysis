@@ -19,6 +19,7 @@ library(stringr)
 library(PMCMR)
 library(RColorBrewer)
 library(rcompanion)
+library(foreign)
 ```
 
 ```{r}
@@ -542,7 +543,8 @@ boxplot(first_visit_data$KK.Kokrofta.Golta_1~first_visit_data$clear_drug,
 
 &nbsp;  
 &nbsp;  
-### Теперь прочие параметры коротко.
+
+### Теперь прочие параметры коротко
 
 &nbsp;  
 
@@ -644,7 +646,82 @@ fisher.test(first_visit_data$clear_drug, first_visit_data$Drugiye.antiagreganty_
 
 
 
+### ХБП еще подцепим и вроде бы все с описательной
+
 ```{r}
-names(first_visit_data)
+spss_import = read.spss("WARD-AF.sav", to.data.frame = T)
+
+spss_import = spss_import[, c("X.", "CKD", "CKD_Stage1")]
+
+first_visit_data = merge(
+  first_visit_data,
+  spss_import,
+  by.x = "Kod.patsiyenta_1",
+  by.y = "X.",
+  all.x = TRUE,
+  all.y = FALSE
+)
+
+```
+
+```{r}
+table(first_visit_data$CKD)
+first_visit_data$CKD %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+
+fisher.test(first_visit_data$clear_drug, first_visit_data$CKD)
+pairwiseNominalIndependence(
+  table(first_visit_data$clear_drug, first_visit_data$CKD),
+  fisher = T,
+  chisq = F,
+  gtest = F
+)
+```
+Тут отличий нет, ну и славненько.
+
+
+&nbsp;
+&nbsp;
+
+Стадии хсн
+
+```{r}
+table(first_visit_data$CKD_Stage1)
+
+first_visit_data$CKD_Stage1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
+
+fisher.test(first_visit_data$clear_drug, first_visit_data$CKD_Stage1)
+
+pairwiseNominalIndependence(
+  table(first_visit_data$clear_drug, first_visit_data$CKD_Stage1),
+  fisher = T,
+  chisq = F,
+  gtest = F
+)
+```
+
+Ну, поправка на множественные сравнения спасает ситуацию, конечно. Но это прям на грани в паре варфарин-прадакса.
+
+```{r fig.width=10}
+par(mar = c(5,5,5,6))
+barplot(table(first_visit_data$CKD_Stage1, first_visit_data$clear_drug) %>% prop.table(., 2),
+        col = brewer.pal(n = first_visit_data$CKD_Stage1 %>% unique() %>% length, "Blues"),
+        main = "CKD stage by drug",
+        ylab = "CKD stage proportion"
+        )
+
+legend(
+  x = 5,
+  y = 1,
+  legend = levels(first_visit_data$CKD_Stage1) %>% rev(),
+  col = brewer.pal(n = first_visit_data$CKD_Stage1 %>% unique() %>% length, "Blues") %>% rev(),
+  pch = 15,
+  xpd = TRUE,
+  inset = c(-0.50, 0)
+)
+```
+
+
+```{r}
+# names(first_visit_data)
 ```
 
