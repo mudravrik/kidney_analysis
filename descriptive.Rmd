@@ -12,14 +12,23 @@ source("reshaper.R", encoding = "UTF-8")
 ```
 
 ```{r}
-library(purrr)
-library(magrittr)
-library(stringi)
-library(stringr)
-library(PMCMR)
-library(RColorBrewer)
-library(rcompanion)
-library(foreign)
+required_packages = c(
+  "foreign",
+  "magrittr",
+  "PMCMR",
+  "purrr",
+  "RColorBrewer",
+  "rcompanion",
+  "stringi",
+  "stringr"
+)
+
+for (package in required_packages) {
+    if (!require(package, character.only=T, quietly=T)) {
+        install.packages(package)
+        library(package, character.only=T)
+    }
+}
 ```
 
 ```{r}
