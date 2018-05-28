@@ -1,0 +1,155 @@
+---
+title: "End-to-end kidney function analysis"
+output:
+  html_document:
+    df_print: paged
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "reports") })
+---
+
+```{r}
+source("reshaper.R", encoding = "UTF-8")
+```
+
+```{r}
+required_packages = c(
+  "foreign",
+  "magrittr",
+  "purrr",
+  "stringi",
+  "stringr"
+)
+
+for (package in required_packages) {
+    if (!require(package, character.only=T, quietly=T)) {
+        install.packages(package)
+        library(package, character.only=T)
+    }
+}
+```
+
+```{r}
+DEF_COLOR = "lightblue"
+```
+
+```{r}
+full_data = access_import_reshape("first_iter_vars.xlsx")
+
+names(full_data) = stri_trans_general(names(full_data), "russian-latin/bgn")
+
+full_data = map_df(full_data, as.character) #pretty shity move, i know
+```
+
+
+```{r}
+full_data$last_visit_index = map_int(1:nrow(full_data), ~full_data[.x, 2:9] %>% is.na() %>% `!` %>% which() %>% max())
+
+full_data = full_data[full_data$last_visit_index > 1 , ]
+
+names(full_data)[42:49] = c("creat_1","creat_2","creat_3","creat_4","creat_5","creat_6","creat_7","creat_8")
+```
+
+
+```{r}
+get_last_visit_value = function(var_name, full_data_frame = full_data){
+  var_name = map_chr(full_data_frame$last_visit_index, ~paste(var_name, .x, sep = "", collapse = ""))
+  
+  tmp = map(1:length(var_name), ~full_data_frame[.x, var_name[.x]]) %>% unlist()
+  
+  return(tmp)
+}
+```
+
+```{r}
+cleared_data = full_data[, str_detect(names(full_data), "_1$")]
+
+cleared_data$clear_drug = str_split(cleared_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist() %>% as.factor()
+
+```
+
+
+
+&nbsp;
+&nbsp;  
+
+### Изменение креатинина
+
+```{r}
+names(cleared_data)[6] = "creat_1"
+
+cleared_data$creat_last = get_last_visit_value("creat_")
+
+cleared_data = cleared_data[!is.na(cleared_data$creat_1), ]
+
+cleared_data$creat_diff = cleared_data$creat_last %>% as.numeric() - cleared_data$creat_1 %>% as.numeric()
+```
+Там кто-то без креатинина на первом визите - выкидываем.
+&nbsp;
+&nbsp;
+
+
+```{r}
+hist(cleared_data$creat_diff, col = DEF_COLOR, breaks = 15, main = "Cratinine changes distribution",
+     xlab = "Creatinine changes from first to last visit",
+     ylab = "Number of patients")
+```
+
+Этот товарищ с креатинином 400 слегка портит картинку. Я выкину его нафиг пока
+
+
+```{r}
+cleared_data = cleared_data[cleared_data$creat_diff > -200, ]
+```
+
+```{r}
+hist(cleared_data$creat_diff, col = DEF_COLOR, breaks = 15, main = "Cratinine changes distribution",
+     xlab = "Creatinine changes from first to last visit",
+     ylab = "Number of patients")
+```
+
+```{r}
+shapiro.test(cleared_data$creat_diff)
+```
+```{r}
+quantile(cleared_data$creat_diff)
+```
+
+```{r}
+par(mfrow = c(2, 2))
+for (drug_name in levels(cleared_data$clear_drug)) {
+  hist(
+    cleared_data$creat_diff[cleared_data$clear_drug == drug_name] %>% as.numeric(.),
+    xlim = c(-80, 60),
+    ylim = c(0,6),
+    breaks = seq(-80,60,10),
+    col = DEF_COLOR,
+    main = drug_name,
+    xlab = "Creatinine changes",
+    ylab = "Number of patients"
+  )
+}
+
+```
+
+
+```{r}
+
+for (drug_name in levels(cleared_data$clear_drug)) {
+  print(drug_name)
+  print(quantile(cleared_data$creat_diff[cleared_data$clear_drug == drug_name]))
+}
+
+```
+
+```{r}
+kruskal.test(cleared_data$creat_diff~cleared_data$clear_drug)
+```
+
+
+
+```{r}
+# names(cleared_data)
+```
+
+
+
