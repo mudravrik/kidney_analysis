@@ -1,5 +1,6 @@
 ---
 title: "End-to-end kidney function analysis"
+author: "Ivan Tsarev, mudravr@gmail.com"
 output:
   html_document:
     df_print: paged
@@ -65,6 +66,10 @@ cleared_data = full_data[, str_detect(names(full_data), "_1$")]
 
 cleared_data$clear_drug = str_split(cleared_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist() %>% as.factor()
 
+cleared_data$last_visit_date = get_last_visit_value("Data.vizita_")
+
+cleared_data$follow_up_length = {cleared_data$last_visit_date %>% as.numeric() %>% as.Date(origin = "1970-01-01")} - {cleared_data$Data.vizita_1 %>% as.numeric() %>% as.Date(origin = "1970-01-01")}
+
 ```
 
 
@@ -79,17 +84,34 @@ names(cleared_data)[6] = "creat_1"
 
 cleared_data$creat_last = get_last_visit_value("creat_")
 
-cleared_data = cleared_data[!is.na(cleared_data$creat_1), ]
-
 cleared_data$creat_diff = cleared_data$creat_last %>% as.numeric() - cleared_data$creat_1 %>% as.numeric()
+
+sprintf("Первое значение: %s        Последнее значение: %s        Разница: %f", 
+  cleared_data$creat_1[1],
+  cleared_data$creat_last[1],
+  cleared_data$creat_diff[1]
+)
+
 ```
+Обратите внимание, что мы вычитаем из конечного результата базовое значение креатинина. Таким образом, положительные значения - это нарастание показателя во времени, отрицательные - снижение показателя.
+Подобная логика будет использоваться и со всеми остальными показателями. Считаете, что нужно иначе? Сообщите!
+&nbsp;
+&nbsp;  
+
+```{r}
+first_creat_data = cleared_data[!is.na(cleared_data$creat_1), ]
+```
+
+
+
+
 Там кто-то без креатинина на первом визите - выкидываем.
 &nbsp;
 &nbsp;
 
 
 ```{r}
-hist(cleared_data$creat_diff, col = DEF_COLOR, breaks = 15, main = "Cratinine changes distribution",
+hist(first_creat_data$creat_diff, col = DEF_COLOR, breaks = 15, main = "Cratinine changes distribution",
      xlab = "Creatinine changes from first to last visit",
      ylab = "Number of patients")
 ```
@@ -98,27 +120,27 @@ hist(cleared_data$creat_diff, col = DEF_COLOR, breaks = 15, main = "Cratinine ch
 
 
 ```{r}
-cleared_data = cleared_data[cleared_data$creat_diff > -200, ]
+first_creat_data = first_creat_data[first_creat_data$creat_diff > -200, ]
 ```
 
 ```{r}
-hist(cleared_data$creat_diff, col = DEF_COLOR, breaks = 15, main = "Cratinine changes distribution",
+hist(first_creat_data$creat_diff, col = DEF_COLOR, breaks = 15, main = "Cratinine changes distribution",
      xlab = "Creatinine changes from first to last visit",
      ylab = "Number of patients")
 ```
 
 ```{r}
-shapiro.test(cleared_data$creat_diff)
+shapiro.test(first_creat_data$creat_diff)
 ```
 ```{r}
-quantile(cleared_data$creat_diff)
+quantile(first_creat_data$creat_diff)
 ```
 
 ```{r}
 par(mfrow = c(2, 2))
-for (drug_name in levels(cleared_data$clear_drug)) {
+for (drug_name in levels(first_creat_data$clear_drug)) {
   hist(
-    cleared_data$creat_diff[cleared_data$clear_drug == drug_name] %>% as.numeric(.),
+    first_creat_data$creat_diff[first_creat_data$clear_drug == drug_name] %>% as.numeric(.),
     xlim = c(-80, 60),
     ylim = c(0,6),
     breaks = seq(-80,60,10),
@@ -131,19 +153,290 @@ for (drug_name in levels(cleared_data$clear_drug)) {
 
 ```
 
+```{r fig.width=9.5}
+boxplot(first_creat_data$creat_diff~first_creat_data$clear_drug,
+        ylab = "Absolute creatinine changes",
+        main = "Creatinine changes by drugs")
+```
+
 
 ```{r}
 
-for (drug_name in levels(cleared_data$clear_drug)) {
+for (drug_name in levels(first_creat_data$clear_drug)) {
   print(drug_name)
-  print(quantile(cleared_data$creat_diff[cleared_data$clear_drug == drug_name]))
+  print(quantile(first_creat_data$creat_diff[first_creat_data$clear_drug == drug_name]))
 }
 
 ```
 
 ```{r}
-kruskal.test(cleared_data$creat_diff~cleared_data$clear_drug)
+kruskal.test(first_creat_data$creat_diff~first_creat_data$clear_drug)
 ```
+
+&nbsp;
+&nbsp;
+
+### Теперь посмотрим на скорость изменения креатинина  
+
+
+
+
+```{r}
+cleared_data$creat_diff_rate = cleared_data$creat_diff / (as.double(cleared_data$follow_up_length)/30.5)
+```
+Скорость изменения креатинина и всего остального будет в расчете на месяц. Потому что там довольно большая часть пациентов не наблюдались и года.
+
+
+```{r}
+creat_diff_data = cleared_data[!is.na(cleared_data$creat_diff_rate), ]
+```
+
+
+```{r}
+hist(creat_diff_data$creat_diff_rate, col = DEF_COLOR, breaks = 15, main = "Cratinine changes rate distribution",
+     xlab = "Creatinine changes from first to last visit",
+     ylab = "Number of patients")
+
+```
+  
+И здесь тоже товарищ с креатинином 400 уезжает отдыхать.
+
+```{r}
+creat_diff_data = creat_diff_data[creat_diff_data$creat_diff_rate > - 100, ]
+```
+
+```{r}
+hist(creat_diff_data$creat_diff_rate, col = DEF_COLOR, breaks = 15, main = "Cratinine changes rate distribution",
+     xlab = "Creatinine changes rate",
+     ylab = "Number of patients")
+
+```
+
+```{r}
+shapiro.test(creat_diff_data$creat_diff_rate)
+quantile(creat_diff_data$creat_diff_rate)
+```
+
+```{r}
+for (drug_name in levels(creat_diff_data$clear_drug)) {
+  print(drug_name)
+  print(quantile(creat_diff_data$creat_diff_rate[creat_diff_data$clear_drug == drug_name]))
+}
+```
+
+```{r}
+par(mfrow = c(2, 2))
+for (drug_name in levels(creat_diff_data$clear_drug)) {
+  hist(
+    creat_diff_data$creat_diff_rate[creat_diff_data$clear_drug == drug_name],
+    xlim = c(-30, 15),
+    ylim = c(0,12),
+    breaks = seq(-30,15,2),
+    col = DEF_COLOR,
+    main = drug_name,
+    xlab = "Creatinine changes rate",
+    ylab = "Number of patients"
+  )
+}
+```
+
+```{r fig.width=9.5}
+boxplot(creat_diff_data$creat_diff_rate~creat_diff_data$clear_drug,
+        ylab = "Creatinine changes rate",
+        main = "Creatinine changes rate by drugs")
+```
+
+
+```{r}
+kruskal.test(creat_diff_data$creat_diff_rate~creat_diff_data$clear_drug)
+```
+
+&nbsp;
+&nbsp;
+
+### Перейдем к CKD-EPI  
+
+
+
+```{r}
+cleared_data$epi_last = get_last_visit_value("SKF.CKD.EPI_")
+
+cleared_data$epi_diff = {cleared_data$epi_last %>% as.numeric()} - {cleared_data$SKF.CKD.EPI_1 %>% as.numeric()}
+
+cleared_data$epi_diff_rate = cleared_data$epi_diff / (as.numeric(cleared_data$follow_up_length)/30.5)
+
+sprintf("Первое значение: %s        Последнее значение: %s        Разница: %f", 
+  cleared_data$SKF.CKD.EPI_1[1],
+  cleared_data$epi_last[1],
+  cleared_data$epi_diff[1]
+)
+
+```
+
+```{r}
+epi_data = cleared_data[!is.na(cleared_data$epi_diff_rate), ]
+```
+
+
+```{r}
+hist(epi_data$epi_diff_rate, col = DEF_COLOR, breaks = 15, main = "CKD-EPI changes rate distribution",
+     xlab = "CKD-EPI monthly change rate from first to last visit",
+     ylab = "Number of patients")
+
+```
+  
+**Вообще, конечно, хорошей идеей было бы исключить этого товарища с большим креатинином совсем. Но тут на ваше усмотрение, сообщите там, когда согласуете со своими критерияями включения/исключения. Хотя здесь он не так сильно выбивается**
+
+```{r}
+epi_data = epi_data[epi_data$epi_diff_rate < 14, ]
+```
+
+
+```{r}
+hist(epi_data$epi_diff_rate, col = DEF_COLOR, breaks = 15, main = "CKD-EPI changes rate distribution",
+     xlab = "CKD-EPI monthly change rate from first to last visit",
+     ylab = "Number of patients")
+
+```
+
+
+
+```{r}
+shapiro.test(epi_data$epi_diff_rate)
+quantile(epi_data$epi_diff_rate)
+```
+
+```{r}
+for (drug_name in levels(epi_data$clear_drug)) {
+  print(drug_name)
+  print(quantile(epi_data$epi_diff_rate[epi_data$clear_drug == drug_name]))
+}
+```
+
+```{r}
+par(mfrow = c(2, 2))
+for (drug_name in levels(epi_data$clear_drug)) {
+  hist(
+    epi_data$epi_diff_rate[epi_data$clear_drug == drug_name],
+    xlim = c(-8, 12),
+    ylim = c(0,12),
+    breaks = seq(-8,12,2),
+    col = DEF_COLOR,
+    main = drug_name,
+    xlab = "CKD-EPI changes rate",
+    ylab = "Number of patients"
+  )
+}
+```
+
+```{r fig.width=9.5}
+boxplot(epi_data$epi_diff_rate~epi_data$clear_drug,
+        ylab = "CKD-EPI changes rate",
+        main = "CKD-EPI changes rate by drugs")
+```
+
+
+```{r}
+kruskal.test(epi_data$epi_diff_rate~epi_data$clear_drug)
+```
+
+#### Ради интереса посмотрим, влиял ли диабет на изменения СКФ
+
+```{r}
+boxplot(epi_data$epi_diff_rate~epi_data$SD_1,
+        ylab = "CKD-EPI changes rate",
+        main = "CKD-EPI changes rate by DM")
+```
+
+```{r}
+wilcox.test(epi_data$epi_diff_rate~epi_data$SD_1)
+```
+Не, что-то тоже особо не влияет.
+
+&nbsp;
+&nbsp;
+
+
+### MDRD
+
+
+```{r}
+cleared_data$mdrd_last = get_last_visit_value("SKF.MDRD_")
+
+cleared_data$mdrd_diff = {cleared_data$mdrd_last %>% as.numeric()} - {cleared_data$SKF.MDRD_1 %>% as.numeric()}
+
+cleared_data$mdrd_diff_rate = cleared_data$mdrd_diff / (as.numeric(cleared_data$follow_up_length)/30.5)
+
+```
+
+```{r}
+mdrd_data = cleared_data[!is.na(cleared_data$mdrd_diff_rate), ]
+```
+
+
+```{r}
+hist(mdrd_data$mdrd_diff_rate, col = DEF_COLOR, breaks = 20, main = "MDRD changes rate distribution",
+     xlab = "MDRD monthly change rate from first to last visit",
+     ylab = "Number of patients")
+
+```
+  
+**Тут, кстати, уже два потенциальных выброса. Но выкинем обычного клиента**
+
+```{r}
+mdrd_data = mdrd_data[mdrd_data$mdrd_diff_rate < 14, ]
+```
+
+
+```{r}
+hist(mdrd_data$mdrd_diff_rate, col = DEF_COLOR, breaks = 20, main = "MDRD changes rate distribution",
+     xlab = "MDRD monthly change rate from first to last visit",
+     ylab = "Number of patients")
+
+```
+
+
+
+```{r}
+shapiro.test(mdrd_data$mdrd_diff_rate)
+quantile(mdrd_data$mdrd_diff_rate)
+```
+
+```{r}
+for (drug_name in levels(mdrd_data$clear_drug)) {
+  print(drug_name)
+  print(quantile(mdrd_data$mdrd_diff_rate[mdrd_data$clear_drug == drug_name]))
+}
+```
+
+```{r}
+par(mfrow = c(2, 2))
+for (drug_name in levels(mdrd_data$clear_drug)) {
+  hist(
+    mdrd_data$mdrd_diff_rate[mdrd_data$clear_drug == drug_name],
+    xlim = c(-14, 20),
+    ylim = c(0,12),
+    breaks = seq(-14,20,2),
+    col = DEF_COLOR,
+    main = drug_name,
+    xlab = "MDRD changes rate",
+    ylab = "Number of patients"
+  )
+}
+```
+
+```{r fig.width=9.5}
+boxplot(mdrd_data$mdrd_diff_rate~mdrd_data$clear_drug,
+        ylab = "MDRD changes rate",
+        main = "MDRD changes rate by drugs")
+```
+
+
+```{r}
+kruskal.test(mdrd_data$mdrd_diff_rate~mdrd_data$clear_drug)
+```
+
+
 
 
 
