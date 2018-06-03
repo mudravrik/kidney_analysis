@@ -1,0 +1,106 @@
+---
+title: "Visit-to-visit kidney function analysis"
+author: "Ivan Tsarev, mudravr@gmail.com"
+output:
+  html_document:
+    df_print: paged
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "reports") })
+---
+
+
+```{r}
+required_packages = c(
+  "magrittr",
+  "purrr",
+  "RColorBrewer",
+  "rcompanion",
+  "stringi",
+  "stringr",
+  "xlsx"
+)
+
+for (package in required_packages) {
+    if (!require(package, character.only=T, quietly=T)) {
+        install.packages(package)
+        library(package, character.only=T)
+    }
+}
+```
+
+
+```{r}
+full_data = read.xlsx(
+  "first_iter_vars.xlsx",
+  sheetIndex = 1,
+  encoding = "UTF-8",
+  stringsAsFactors = F
+)
+
+names(full_data) = stri_trans_general(names(full_data), "russian-latin/bgn")
+
+full_data$Kod.vizita %<>% as.numeric(.)
+
+full_data = full_data[order(full_data$Kod.patsiyenta, full_data$Data.vizita),]
+
+for (i in 1:max(full_data$Kod.patsiyenta)) {
+  full_data$visit_index[full_data$Kod.patsiyenta == i] = c(1:length(full_data$Kod.vizita[full_data$Kod.patsiyenta == i]))
+}
+
+full_data$is_last_visit = map_lgl(1:nrow(full_data),
+                                  ~ full_data$visit_index[.x] == max(full_data$visit_index[full_data$Kod.patsiyenta == full_data$Kod.patsiyenta[.x]])) 
+
+```
+
+```{r}
+visit_diff_calc = function(var_to_calc, frame = full_data){
+  tmp = numeric()
+  
+  for (i in 1:nrow(frame)) {
+    
+    if(frame$is_last_visit[i]){
+      tmp[i] = NA
+      #print(frame$is_last_visit[i])
+    }else{
+      tmp[i] = as.numeric(frame[i+1, var_to_calc]) - as.numeric(frame[i, var_to_calc])
+    }
+    
+  }
+  
+  return(tmp)
+}
+```
+
+```{r}
+full_data$creat_diff = visit_diff_calc("Kreatinin..mkmolʹ.l")
+full_data$epi_diff = visit_diff_calc("SKF.CKD.EPI")
+full_data$mdrd_diff = visit_diff_calc("SKF.MDRD")
+full_data$visit_length = visit_diff_calc("Data.vizita")
+```
+  
+Что здесь происходит вообще? Повизитно смотрим на динамику параметров, менялись ли, и в зависимости от чего.
+Повизитность выглядит вот так:
+```{r}
+head(full_data[ , c("visit_index","Kod.patsiyenta","SKF.CKD.EPI", "epi_diff")])
+```
+У первого пациента всего один визит, поэтому с ним ничего не выйдет дальше.
+У второго пациента два визита. На первом СКФ была 74, на втором - 52. Значит динамика - -22. Отрицательные числа - снижение показателя.
+Второй визит был последним, его динамики мы не знаем, поэтому NA.
+Визиты без динамики исключаем.
+  
+  
+
+```{r}
+cleared_data = full_data[!is.na(full_data$visit_length),]
+```
+
+
+
+```{r}
+names(full_data)
+```
+
+
+
+
+
