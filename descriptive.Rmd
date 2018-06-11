@@ -72,8 +72,13 @@ barplot(
 cleaned_data = full_data[full_data$max_visit_index > 1, ]
 
 cleaned_data[, str_detect(names(cleaned_data), "Data.vizita")] = apply(cleaned_data[, str_detect(names(cleaned_data), "Data.vizita")], 2, as.numeric)
-```
 
+cleaned_data = cleaned_data[as.numeric(cleaned_data[, 42] %>% unlist()) < 350 & !is.na(cleaned_data[, 42] %>% unlist()), ]
+```
+Выкинул товарищей без креатинина на первом визите и с креатининов больше 350.
+
+&nbsp;
+&nbsp;  
 Посмотрим продолжительность наблюдений
 
 ```{r}
@@ -470,8 +475,8 @@ hist(first_visit_data$creatinine,
      ylab = "Number of patients",
      main = "Creatinine distribution")
 ```
-Там у 22-го креатинин 426, это законно?
-&nbsp;
+
+
 ```{r}
 shapiro.test(first_visit_data$creatinine)
 quantile(first_visit_data$creatinine, na.rm = T)
@@ -556,22 +561,14 @@ hist(first_visit_data$KK.Kokrofta.Golta_1,
 &nbsp;
 ```{r}
 shapiro.test(first_visit_data$KK.Kokrofta.Golta_1)
-sprintf(
-  "Средний CKD-EPI: %f; Среднеквадратичное отклонение: %f",
-  mean(first_visit_data$KK.Kokrofta.Golta_1, na.rm = T),
-  sd(first_visit_data$KK.Kokrofta.Golta_1, na.rm = T)
-)
-
+quantile(first_visit_data$KK.Kokrofta.Golta_1, na.rm = T)
 ```
 
 По препаратам:
 ```{r}
 for(i in levels(first_visit_data$clear_drug)) {
-  creat_vec = first_visit_data$KK.Kokrofta.Golta_1[first_visit_data$clear_drug == i]
-  sprintf("Препарат: %s; Средний CKD-EPI: %f\u00B1%f",
-          i,
-          mean(creat_vec, na.rm = T),
-          sd(creat_vec, na.rm = T)) %>% print()
+  print(i)
+  print(quantile(first_visit_data$KK.Kokrofta.Golta_1[first_visit_data$clear_drug == i], na.rm = T))
 }
 ```
 
@@ -639,6 +636,46 @@ fisher.test(first_visit_data$clear_drug, first_visit_data$IBS_1)
 first_visit_data$Sosudistyye.zabolevaniya_1 %>% table(., first_visit_data$clear_drug) %T>% print() %>% prop.table(., 2)
 fisher.test(first_visit_data$clear_drug, first_visit_data$Sosudistyye.zabolevaniya_1)
 ```
+
+```{r}
+pairwiseNominalIndependence(
+  table(
+    first_visit_data$clear_drug,
+    first_visit_data$Sosudistyye.zabolevaniya_1
+  ),
+  fisher = T,
+  gtest = F,
+  chisq = F
+)
+```
+
+
+```{r fig.width=10.5}
+par(mar = c(4,5,4,8))
+
+barplot(
+  prop.table(
+    table(
+      first_visit_data$Sosudistyye.zabolevaniya_1,
+      first_visit_data$clear_drug
+    ),
+    2
+  ),
+  col = c(DEF_COLOR, "lightcoral"),
+  main = "Vessel disease rate by drugs"
+)
+
+legend(
+  x = 5,
+  y = 1,
+  legend = c("W/out VD", "With VD"),
+  col = c(DEF_COLOR, "lightcoral"),
+  pch = 15,
+  xpd = TRUE,
+  inset = c(-0.50, 0)
+)
+```
+
 
 &nbsp;  
 ЯБЖ
@@ -761,7 +798,7 @@ legend(
   x = 5,
   y = 1,
   legend = levels(first_visit_data$CKD_Stage1) %>% rev(),
-  col = brewer.pal(n = first_visit_data$CKD_Stage1 %>% unique() %>% length, "Blues") %>% rev(),
+  col = brewer.pal(n = first_visit_data$CKD_Stage1 %>% levels() %>% length, "Blues") %>% rev(),
   pch = 15,
   xpd = TRUE,
   inset = c(-0.50, 0)
