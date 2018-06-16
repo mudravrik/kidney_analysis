@@ -1,0 +1,534 @@
+---
+title: "CKD descriptive stats"
+output:
+  html_document:
+    df_print: paged
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "reports") })
+---
+
+```{r}
+source("reshaper.R", encoding = "UTF-8")
+```
+
+```{r}
+required_packages = c(
+  "foreign",
+  "magrittr",
+  "PMCMR",
+  "purrr",
+  "RColorBrewer",
+  "rcompanion",
+  "stringi",
+  "stringr"
+)
+
+for (package in required_packages) {
+    if (!require(package, character.only=T, quietly=T)) {
+        install.packages(package)
+        library(package, character.only=T)
+    }
+}
+```
+
+```{r}
+DEF_COLOR = "lightblue"
+```
+
+
+```{r}
+spss_import = read.spss("WARD-AF.sav", to.data.frame = T)
+```
+```{r}
+full_data = access_import_reshape("second_iter_vars.xlsx")
+
+names(full_data) = stri_trans_general(names(full_data), "russian-latin/bgn")
+
+names(full_data)[grepl("Kreatinin", names(full_data))] = map_chr(1:8, ~paste0("creat_", .x))
+
+```
+
+**Выкидываем всех с одним визитом, отсутствием креатинина на 1 визите или креатинином больше 400**
+```{r}
+prospective_data = full_data[!is.na(full_data$creat_1) & !is.na(full_data$creat_2) & full_data$creat_1 %>% as.character() %>% as.numeric() < 400, ]
+```
+
+
+```{r}
+spss_import = spss_import[, c("X.", "CKD", "CKD_Stage1")]
+
+prospective_data = merge(
+  prospective_data,
+  spss_import,
+  by.x = "Kod.patsiyenta_1",
+  by.y = "X.",
+  all.x = TRUE,
+  all.y = FALSE
+)
+```
+
+```{r}
+prospective_data$Antikoagulyant_1 = str_split(prospective_data$Antikoagulyant_1, " м") %>% map(., 1) %>% unlist()
+
+prospective_data$clear_drug = str_split(prospective_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist() %>% as.factor()
+```
+  
+  
+ХБП
+```{r}
+table(prospective_data$CKD)
+prop.table(table(prospective_data$CKD))
+```
+
+```{r}
+table(prospective_data$Antikoagulyant_1, prospective_data$CKD)
+prop.table(table(prospective_data$Antikoagulyant_1, prospective_data$CKD), 2)
+```
+
+```{r}
+table(prospective_data$clear_drug, prospective_data$CKD)
+prop.table(table(prospective_data$clear_drug, prospective_data$CKD), 2)
+```
+  
+  
+Возраст
+```{r}
+prospective_data$Polnykh.let_1 %<>% as.character() %>% as.numeric()
+
+hist(
+  prospective_data$Polnykh.let_1,
+  col = DEF_COLOR,
+  main = "Age distribution",
+  xlab = "Age, years",
+  ylab = "Number of patients"
+)
+```
+
+
+```{r}
+shapiro.test(prospective_data$Polnykh.let_1)
+
+sprintf(
+  "Средний возраст: %f; Среднеквадратичное отклонение: %f",
+  mean(prospective_data$Polnykh.let_1),
+  sd(prospective_data$Polnykh.let_1)
+)
+
+```
+
+По препаратам:
+```{r}
+for(i in unique(prospective_data$CKD)) {
+  age_vec = prospective_data$Polnykh.let_1[prospective_data$CKD == i]
+  sprintf("ХБП: %s; Средний возраст: %f\u00B1%f",
+          i,
+          mean(age_vec),
+          sd(age_vec)) %>% print()
+}
+```
+
+
+```{r}
+wilcox.test(prospective_data$Polnykh.let_1~prospective_data$CKD)
+```
+```{r}
+boxplot(prospective_data$Polnykh.let_1~prospective_data$CKD,
+        ylab = "Age",
+        main = "Age distribution by CKD")
+```
+  
+  
+  Пол
+```{r}
+table(prospective_data$Pol.patsiyenta_1)
+prop.table(table(prospective_data$Pol.patsiyenta_1))
+```
+
+```{r}
+table(prospective_data$Pol.patsiyenta_1,
+      prospective_data$CKD)
+
+prop.table(table(
+  prospective_data$Pol.patsiyenta_1,
+  prospective_data$CKD
+),
+2)
+```
+
+```{r}
+fisher.test(prospective_data$Pol.patsiyenta_1,
+            prospective_data$CKD)
+```
+
+
+  
+  
+ИМТ
+
+
+```{r}
+prospective_data$IMT_1 %<>% as.character() %>% as.numeric()
+```
+
+```{r}
+shapiro.test(prospective_data$IMT_1)
+
+quantile(prospective_data$IMT_1)
+
+sprintf("ХБП: Средний ИМТ: %f\u00B1%f",
+          
+          mean(prospective_data$IMT_1),
+          sd(prospective_data$IMT_1)) %>% print()
+
+
+```
+
+
+```{r}
+quantile(prospective_data$IMT_1)
+
+for(i in unique(prospective_data$CKD)) {
+  age_vec = prospective_data$IMT_1[prospective_data$CKD == i]
+  sprintf("ХБП: %s; Квантили: ",
+          i) %>% print()
+          quantile(age_vec) %>% print()
+
+}
+
+for(i in unique(prospective_data$CKD)) {
+  age_vec = prospective_data$IMT_1[prospective_data$CKD == i]
+  sprintf("ХБП: %s; Средний ИМТ: %f\u00B1%f",
+          i,
+          mean(age_vec),
+          sd(age_vec)) %>% print()
+
+}
+```
+```{r}
+wilcox.test(prospective_data$IMT_1~prospective_data$CKD)
+```
+
+
+Шкалы
+
+```{r}
+prospective_data$Ball.po.CHA2DS2VASc_1 %<>% as.character() %>% as.numeric()
+```
+
+```{r}
+table(prospective_data$Ball.po.CHA2DS2VASc_1)
+
+quantile(prospective_data$Ball.po.CHA2DS2VASc_1)
+
+sprintf("ХБП: Средний балл CHA2DS2VASc_1: %f\u00B1%f",
+          
+          mean(prospective_data$Ball.po.CHA2DS2VASc_1),
+          sd(prospective_data$Ball.po.CHA2DS2VASc_1)) %>% print()
+
+
+```
+
+
+```{r}
+
+shapiro.test(prospective_data$Ball.po.CHA2DS2VASc_1)
+
+quantile(prospective_data$Ball.po.CHA2DS2VASc_1)
+
+for(i in unique(prospective_data$CKD)) {
+  age_vec = prospective_data$Ball.po.CHA2DS2VASc_1[prospective_data$CKD == i]
+  sprintf("ХБП: %s; Квантили: ",
+          i) %>% print()
+          quantile(age_vec) %>% print()
+
+}
+
+for(i in unique(prospective_data$CKD)) {
+  age_vec = prospective_data$Ball.po.CHA2DS2VASc_1[prospective_data$CKD == i]
+  sprintf("ХБП: %s; Средний балл CHA2DS2VASc_1: %f\u00B1%f",
+          i,
+          mean(age_vec),
+          sd(age_vec)) %>% print()
+
+}
+```
+```{r}
+wilcox.test(prospective_data$Ball.po.CHA2DS2VASc_1~prospective_data$CKD)
+```
+
+
+```{r}
+prospective_data$Ball.po.HAS.BLED_1 %<>% as.character() %>% as.numeric()
+```
+
+```{r}
+
+shapiro.test(prospective_data$Ball.po.HAS.BLED_1)
+
+quantile(prospective_data$Ball.po.HAS.BLED_1)
+
+for(i in unique(prospective_data$CKD)) {
+  age_vec = prospective_data$Ball.po.HAS.BLED_1[prospective_data$CKD == i]
+  sprintf("ХБП: %s; Квантили: ",
+          i) %>% print()
+          quantile(age_vec) %>% print()
+
+}
+
+for(i in unique(prospective_data$CKD)) {
+  age_vec = prospective_data$Ball.po.HAS.BLED_1[prospective_data$CKD == i]
+  sprintf("ХБП: %s; Средний балл HAS.BLED_1: %f\u00B1%f",
+          i,
+          mean(age_vec),
+          sd(age_vec)) %>% print()
+
+}
+```
+```{r}
+wilcox.test(prospective_data$Ball.po.HAS.BLED_1~prospective_data$CKD)
+```
+  
+  
+Креатинин
+```{r}
+prospective_data$creat_1 %<>% as.character() %>% as.numeric()
+```
+
+
+```{r}
+shapiro.test(prospective_data$creat_1)
+
+sprintf(
+  "Средний креатинин: %f; Среднеквадратичное отклонение: %f",
+  mean(prospective_data$creat_1),
+  sd(prospective_data$creat_1)
+)
+quantile(prospective_data$creat_1)
+
+```
+
+По препаратам:
+```{r}
+for(i in unique(prospective_data$CKD)) {
+  age_vec = prospective_data$creat_1[prospective_data$CKD == i]
+  quantile(age_vec) %>% print()
+  sprintf("ХБП: %s; Средний креатинин: %f\u00B1%f",
+          i,
+          mean(age_vec),
+          sd(age_vec)) %>% print()
+
+}
+```
+
+
+```{r}
+wilcox.test(prospective_data$creat_1~prospective_data$CKD)
+```
+```{r}
+boxplot(prospective_data$creat_1~prospective_data$CKD,
+        ylab = "Creatinine",
+        main = "Creatinine distribution by CKD")
+```
+  
+  
+СКФ MDRD
+
+
+```{r}
+prospective_data$SKF.MDRD_1 %<>% as.character() %>% as.numeric()
+```
+
+
+```{r}
+shapiro.test(prospective_data$SKF.MDRD_1)
+
+sprintf(
+  "Средний MDRD: %f; Среднеквадратичное отклонение: %f",
+  mean(prospective_data$SKF.MDRD_1),
+  sd(prospective_data$SKF.MDRD_1)
+)
+quantile(prospective_data$SKF.MDRD_1)
+
+```
+
+По препаратам:
+```{r}
+for(i in unique(prospective_data$CKD)) {
+  age_vec = prospective_data$SKF.MDRD_1[prospective_data$CKD == i]
+  quantile(age_vec) %>% print()
+  sprintf("ХБП: %s; Средний MDRD: %f\u00B1%f",
+          i,
+          mean(age_vec),
+          sd(age_vec)) %>% print()
+
+}
+```
+
+
+```{r}
+wilcox.test(prospective_data$SKF.MDRD_1~prospective_data$CKD)
+```
+```{r}
+boxplot(prospective_data$SKF.MDRD_1~prospective_data$CKD,
+        ylab = "MDRD",
+        main = "MDRD distribution by CKD")
+```
+
+
+СКФ EPI
+
+
+```{r}
+prospective_data$SKF.CKD.EPI_1 %<>% as.character() %>% as.numeric()
+```
+
+
+```{r}
+shapiro.test(prospective_data$SKF.CKD.EPI_1)
+
+sprintf(
+  "Средний CKD-EPI: %f; Среднеквадратичное отклонение: %f",
+  mean(prospective_data$SKF.CKD.EPI_1),
+  sd(prospective_data$SKF.CKD.EPI_1)
+)
+quantile(prospective_data$SKF.CKD.EPI_1)
+
+```
+
+```{r}
+for(i in unique(prospective_data$CKD)) {
+  age_vec = prospective_data$SKF.CKD.EPI_1[prospective_data$CKD == i]
+  quantile(age_vec) %>% print()
+  sprintf("ХБП: %s; Средний CKD-EPI: %f\u00B1%f",
+          i,
+          mean(age_vec),
+          sd(age_vec)) %>% print()
+
+}
+```
+
+
+```{r}
+wilcox.test(prospective_data$SKF.CKD.EPI_1~prospective_data$CKD)
+```
+```{r}
+boxplot(prospective_data$SKF.CKD.EPI_1~prospective_data$CKD,
+        ylab = "CKD-EPI",
+        main = "CKD-EPI distribution by CKD")
+```
+
+  
+Я, честно говоря, не понял, в чем вообще логика сравнивать пациентов с хбп и без - они же очевидно должны быть разными.
+
+  
+  
+КК
+СКФ EPI
+
+
+```{r}
+prospective_data$KK.Kokrofta.Golta_1 %<>% as.character() %>% as.numeric()
+```
+
+
+```{r}
+shapiro.test(prospective_data$KK.Kokrofta.Golta_1)
+
+sprintf(
+  "Средний KK: %f; Среднеквадратичное отклонение: %f",
+  mean(prospective_data$KK.Kokrofta.Golta_1, na.rm = T),
+  sd(prospective_data$KK.Kokrofta.Golta_1, na.rm = T)
+)
+quantile(prospective_data$KK.Kokrofta.Golta_1, na.rm = T)
+
+```
+
+```{r}
+for(i in unique(prospective_data$CKD)) {
+  age_vec = prospective_data$KK.Kokrofta.Golta_1[prospective_data$CKD == i]
+  quantile(age_vec, na.rm = T) %>% print()
+  sprintf("ХБП: %s; Средний KK: %f\u00B1%f",
+          i,
+          mean(age_vec, na.rm = T),
+          sd(age_vec, na.rm = T)) %>% print()
+
+}
+```
+
+
+```{r}
+wilcox.test(prospective_data$KK.Kokrofta.Golta_1~prospective_data$CKD)
+```
+```{r}
+boxplot(prospective_data$KK.Kokrofta.Golta_1~prospective_data$CKD,
+        ylab = "CKD-EPI",
+        main = "CKD-EPI distribution by CKD")
+```
+
+
+  
+  
+```{r}
+make_cat_decription_row = function(cat_variable, group_factor){
+  sprintf("Categorial_variable - %s", substitute(cat_variable)[3] %>% as.character()) %>% print()
+   sprintf("Grouping factor - %s", substitute(group_factor)[3] %>% as.character()) %>% print()
+
+  
+  tmp = list()
+  
+  tmp$table = table(cat_variable)
+  
+  tmp$proptable = prop.table(tmp$table)
+  
+  tmp$grouped_table = table(cat_variable, group_factor)
+  
+  tmp$grouped_prop = prop.table(tmp$grouped_table, 2)
+  
+  tmp$fisher = fisher.test(cat_variable, group_factor)
+  
+  print(tmp)
+}
+
+```
+```{r}
+make_cat_decription_row(prospective_data$GB_1, prospective_data$CKD)
+```
+
+```{r}
+make_cat_decription_row(prospective_data$OIM_1, prospective_data$CKD)
+```
+
+```{r}
+make_cat_decription_row(prospective_data$ONMK_1, prospective_data$CKD)
+```
+
+```{r}
+make_cat_decription_row(prospective_data$SD_1, prospective_data$CKD)
+```
+
+
+```{r}
+make_cat_decription_row(prospective_data$KHSN_1, prospective_data$CKD)
+```
+
+```{r}
+make_cat_decription_row(prospective_data$Forma.FP_1, prospective_data$CKD)
+```
+
+```{r}
+make_cat_decription_row(prospective_data$Varfarin.raneye_1, prospective_data$CKD)
+```
+
+```{r}
+prospective_data$BAB_1_total = !is.na(prospective_data$BAB_1)
+
+make_cat_decription_row(prospective_data$BAB_1_total, prospective_data$CKD)
+```
+
+
+
+```{r}
+#names(full_data)
+```
+
+
