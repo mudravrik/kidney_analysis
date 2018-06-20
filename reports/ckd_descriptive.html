@@ -939,6 +939,318 @@ make_cat_decription_row(prospective_data$BAB_1_total, prospective_data$CKD)</cod
 ## sample estimates:
 ## odds ratio 
 ##   2.533438</code></pre>
+<pre class="r"><code>prospective_data$BRAAS_1_total = !is.na(prospective_data$BRAAS_1)
+
+make_cat_decription_row(prospective_data$BRAAS_1_total, prospective_data$CKD)</code></pre>
+<pre><code>## [1] &quot;Categorial_variable - BRAAS_1_total&quot;
+## [1] &quot;Grouping factor - CKD&quot;
+## $table
+## cat_variable
+## FALSE  TRUE 
+##    22    50 
+## 
+## $proptable
+## cat_variable
+##     FALSE      TRUE 
+## 0.3055556 0.6944444 
+## 
+## $grouped_table
+##             group_factor
+## cat_variable нет есть
+##        FALSE   9   13
+##        TRUE   10   40
+## 
+## $grouped_prop
+##             group_factor
+## cat_variable       нет      есть
+##        FALSE 0.4736842 0.2452830
+##        TRUE  0.5263158 0.7547170
+## 
+## $fisher
+## 
+##  Fisher's Exact Test for Count Data
+## 
+## data:  cat_variable and group_factor
+## p-value = 0.08394
+## alternative hypothesis: true odds ratio is not equal to 1
+## 95 percent confidence interval:
+##  0.7935681 9.4580092
+## sample estimates:
+## odds ratio 
+##   2.726147</code></pre>
+<pre class="r"><code>prospective_data$BKK_1_total = !is.na(prospective_data$BKK_1)
+
+make_cat_decription_row(prospective_data$BKK_1_total, prospective_data$CKD)</code></pre>
+<pre><code>## [1] &quot;Categorial_variable - BKK_1_total&quot;
+## [1] &quot;Grouping factor - CKD&quot;
+## $table
+## cat_variable
+## FALSE  TRUE 
+##    56    16 
+## 
+## $proptable
+## cat_variable
+##     FALSE      TRUE 
+## 0.7777778 0.2222222 
+## 
+## $grouped_table
+##             group_factor
+## cat_variable нет есть
+##        FALSE  13   43
+##        TRUE    6   10
+## 
+## $grouped_prop
+##             group_factor
+## cat_variable       нет      есть
+##        FALSE 0.6842105 0.8113208
+##        TRUE  0.3157895 0.1886792
+## 
+## $fisher
+## 
+##  Fisher's Exact Test for Count Data
+## 
+## data:  cat_variable and group_factor
+## p-value = 0.3354
+## alternative hypothesis: true odds ratio is not equal to 1
+## 95 percent confidence interval:
+##  0.134480 2.043876
+## sample estimates:
+## odds ratio 
+##  0.5091423</code></pre>
+<pre class="r"><code>prospective_data$Amiodaron_1_total = !is.na(prospective_data$Amiodaron_1)
+
+make_cat_decription_row(prospective_data$Amiodaron_1_total, prospective_data$CKD)</code></pre>
+<pre><code>## [1] &quot;Categorial_variable - Amiodaron_1_total&quot;
+## [1] &quot;Grouping factor - CKD&quot;
+## $table
+## cat_variable
+## FALSE  TRUE 
+##    61    11 
+## 
+## $proptable
+## cat_variable
+##     FALSE      TRUE 
+## 0.8472222 0.1527778 
+## 
+## $grouped_table
+##             group_factor
+## cat_variable нет есть
+##        FALSE  17   44
+##        TRUE    2    9
+## 
+## $grouped_prop
+##             group_factor
+## cat_variable       нет      есть
+##        FALSE 0.8947368 0.8301887
+##        TRUE  0.1052632 0.1698113
+## 
+## $fisher
+## 
+##  Fisher's Exact Test for Count Data
+## 
+## data:  cat_variable and group_factor
+## p-value = 0.7158
+## alternative hypothesis: true odds ratio is not equal to 1
+## 95 percent confidence interval:
+##   0.3093053 18.0476719
+## sample estimates:
+## odds ratio 
+##    1.72658</code></pre>
+<pre class="r"><code>prospective_data$Antiaritmiki_1_total = !is.na(prospective_data$Antiaritmiki_1)
+
+make_cat_decription_row(prospective_data$Antiaritmiki_1_total, prospective_data$CKD)</code></pre>
+<pre><code>## [1] &quot;Categorial_variable - Antiaritmiki_1_total&quot;
+## [1] &quot;Grouping factor - CKD&quot;
+## $table
+## cat_variable
+## FALSE  TRUE 
+##    51    21 
+## 
+## $proptable
+## cat_variable
+##     FALSE      TRUE 
+## 0.7083333 0.2916667 
+## 
+## $grouped_table
+##             group_factor
+## cat_variable нет есть
+##        FALSE  11   40
+##        TRUE    8   13
+## 
+## $grouped_prop
+##             group_factor
+## cat_variable       нет      есть
+##        FALSE 0.5789474 0.7547170
+##        TRUE  0.4210526 0.2452830
+## 
+## $fisher
+## 
+##  Fisher's Exact Test for Count Data
+## 
+## data:  cat_variable and group_factor
+## p-value = 0.2383
+## alternative hypothesis: true odds ratio is not equal to 1
+## 95 percent confidence interval:
+##  0.1303456 1.5919491
+## sample estimates:
+## odds ratio 
+##  0.4523494</code></pre>
+<pre class="r"><code>prospective_data$Statiny_1_total = !is.na(prospective_data$Statiny_1)
+
+make_cat_decription_row(prospective_data$Statiny_1_total, prospective_data$CKD)</code></pre>
+<pre><code>## [1] &quot;Categorial_variable - Statiny_1_total&quot;
+## [1] &quot;Grouping factor - CKD&quot;
+## $table
+## cat_variable
+## FALSE  TRUE 
+##    28    44 
+## 
+## $proptable
+## cat_variable
+##     FALSE      TRUE 
+## 0.3888889 0.6111111 
+## 
+## $grouped_table
+##             group_factor
+## cat_variable нет есть
+##        FALSE   8   20
+##        TRUE   11   33
+## 
+## $grouped_prop
+##             group_factor
+## cat_variable       нет      есть
+##        FALSE 0.4210526 0.3773585
+##        TRUE  0.5789474 0.6226415
+## 
+## $fisher
+## 
+##  Fisher's Exact Test for Count Data
+## 
+## data:  cat_variable and group_factor
+## p-value = 0.7879
+## alternative hypothesis: true odds ratio is not equal to 1
+## 95 percent confidence interval:
+##  0.3530534 3.9335600
+## sample estimates:
+## odds ratio 
+##   1.196925</code></pre>
+<pre class="r"><code>prospective_data$agreganty_1_total = !is.na(prospective_data$Aspirin_1) | !is.na(prospective_data$Drugiye.antiagreganty_1)
+
+make_cat_decription_row(prospective_data$agreganty_1_total, prospective_data$CKD)</code></pre>
+<pre><code>## [1] &quot;Categorial_variable - agreganty_1_total&quot;
+## [1] &quot;Grouping factor - CKD&quot;
+## $table
+## cat_variable
+## FALSE  TRUE 
+##    68     4 
+## 
+## $proptable
+## cat_variable
+##      FALSE       TRUE 
+## 0.94444444 0.05555556 
+## 
+## $grouped_table
+##             group_factor
+## cat_variable нет есть
+##        FALSE  19   49
+##        TRUE    0    4
+## 
+## $grouped_prop
+##             group_factor
+## cat_variable       нет      есть
+##        FALSE 1.0000000 0.9245283
+##        TRUE  0.0000000 0.0754717
+## 
+## $fisher
+## 
+##  Fisher's Exact Test for Count Data
+## 
+## data:  cat_variable and group_factor
+## p-value = 0.5674
+## alternative hypothesis: true odds ratio is not equal to 1
+## 95 percent confidence interval:
+##  0.2347035       Inf
+## sample estimates:
+## odds ratio 
+##        Inf</code></pre>
+<pre class="r"><code>prospective_data$inhibitor_1_total = !is.na(prospective_data$Ingibitor.pompy_1)
+
+make_cat_decription_row(prospective_data$inhibitor_1_total, prospective_data$CKD)</code></pre>
+<pre><code>## [1] &quot;Categorial_variable - inhibitor_1_total&quot;
+## [1] &quot;Grouping factor - CKD&quot;
+## $table
+## cat_variable
+## FALSE  TRUE 
+##    47    25 
+## 
+## $proptable
+## cat_variable
+##     FALSE      TRUE 
+## 0.6527778 0.3472222 
+## 
+## $grouped_table
+##             group_factor
+## cat_variable нет есть
+##        FALSE  14   33
+##        TRUE    5   20
+## 
+## $grouped_prop
+##             group_factor
+## cat_variable       нет      есть
+##        FALSE 0.7368421 0.6226415
+##        TRUE  0.2631579 0.3773585
+## 
+## $fisher
+## 
+##  Fisher's Exact Test for Count Data
+## 
+## data:  cat_variable and group_factor
+## p-value = 0.4151
+## alternative hypothesis: true odds ratio is not equal to 1
+## 95 percent confidence interval:
+##  0.4777205 6.9078894
+## sample estimates:
+## odds ratio 
+##   1.685005</code></pre>
+<pre class="r"><code>prospective_data$diuretiki_1_total = !is.na(prospective_data$Diuretiki_1)
+
+make_cat_decription_row(prospective_data$diuretiki_1_total, prospective_data$CKD)</code></pre>
+<pre><code>## [1] &quot;Categorial_variable - diuretiki_1_total&quot;
+## [1] &quot;Grouping factor - CKD&quot;
+## $table
+## cat_variable
+## FALSE  TRUE 
+##    38    34 
+## 
+## $proptable
+## cat_variable
+##     FALSE      TRUE 
+## 0.5277778 0.4722222 
+## 
+## $grouped_table
+##             group_factor
+## cat_variable нет есть
+##        FALSE  10   28
+##        TRUE    9   25
+## 
+## $grouped_prop
+##             group_factor
+## cat_variable       нет      есть
+##        FALSE 0.5263158 0.5283019
+##        TRUE  0.4736842 0.4716981
+## 
+## $fisher
+## 
+##  Fisher's Exact Test for Count Data
+## 
+## data:  cat_variable and group_factor
+## p-value = 1
+## alternative hypothesis: true odds ratio is not equal to 1
+## 95 percent confidence interval:
+##  0.3054532 3.2582960
+## sample estimates:
+## odds ratio 
+##  0.9921725</code></pre>
 <pre class="r"><code>#names(full_data)</code></pre>
 
 

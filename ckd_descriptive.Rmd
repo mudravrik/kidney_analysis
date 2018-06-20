@@ -525,6 +525,55 @@ prospective_data$BAB_1_total = !is.na(prospective_data$BAB_1)
 make_cat_decription_row(prospective_data$BAB_1_total, prospective_data$CKD)
 ```
 
+```{r}
+prospective_data$BRAAS_1_total = !is.na(prospective_data$BRAAS_1)
+
+make_cat_decription_row(prospective_data$BRAAS_1_total, prospective_data$CKD)
+```
+
+
+```{r}
+prospective_data$BKK_1_total = !is.na(prospective_data$BKK_1)
+
+make_cat_decription_row(prospective_data$BKK_1_total, prospective_data$CKD)
+```
+
+```{r}
+prospective_data$Amiodaron_1_total = !is.na(prospective_data$Amiodaron_1)
+
+make_cat_decription_row(prospective_data$Amiodaron_1_total, prospective_data$CKD)
+```
+
+
+```{r}
+prospective_data$Antiaritmiki_1_total = !is.na(prospective_data$Antiaritmiki_1)
+
+make_cat_decription_row(prospective_data$Antiaritmiki_1_total, prospective_data$CKD)
+```
+
+```{r}
+prospective_data$Statiny_1_total = !is.na(prospective_data$Statiny_1)
+
+make_cat_decription_row(prospective_data$Statiny_1_total, prospective_data$CKD)
+```
+
+```{r}
+prospective_data$agreganty_1_total = !is.na(prospective_data$Aspirin_1) | !is.na(prospective_data$Drugiye.antiagreganty_1)
+
+make_cat_decription_row(prospective_data$agreganty_1_total, prospective_data$CKD)
+```
+
+```{r}
+prospective_data$inhibitor_1_total = !is.na(prospective_data$Ingibitor.pompy_1)
+
+make_cat_decription_row(prospective_data$inhibitor_1_total, prospective_data$CKD)
+```
+
+```{r}
+prospective_data$diuretiki_1_total = !is.na(prospective_data$Diuretiki_1)
+
+make_cat_decription_row(prospective_data$diuretiki_1_total, prospective_data$CKD)
+```
 
 
 ```{r}
