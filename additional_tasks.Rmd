@@ -1,0 +1,149 @@
+---
+title: "CKD descriptive stats"
+output:
+  html_document:
+    df_print: paged
+    code_folding: hide
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "reports") })
+---
+
+```{r}
+source("reshaper.R", encoding = "UTF-8")
+```
+
+```{r}
+required_packages = c(
+  "foreign",
+  "magrittr",
+  "purrr",
+  "RColorBrewer",
+  "stringi",
+  "stringr",
+  "rcompanion"
+)
+
+for (package in required_packages) {
+    if (!require(package, character.only=T, quietly=T)) {
+        install.packages(package)
+        library(package, character.only=T)
+    }
+}
+```
+
+```{r}
+DEF_COLOR = "lightblue"
+```
+
+
+```{r}
+spss_import = read.spss("WARD-AF.sav", to.data.frame = T)
+
+spss_import = spss_import[, c("X.", "CKD", "CKD_Stage1")]
+
+```
+
+```{r}
+full_data = access_import_reshape("second_iter_vars.xlsx")
+
+names(full_data) = stri_trans_general(names(full_data), "russian-latin/bgn")
+
+names(full_data)[grepl("Kreatinin", names(full_data))] = map_chr(1:8, ~paste0("creat_", .x))
+
+```
+
+**Выкидываем всех с одним визитом, отсутствием креатинина на 1 визите или креатинином больше 400**
+```{r}
+prospective_data = full_data[!is.na(full_data$creat_1) & !is.na(full_data$creat_2) & full_data$creat_1 %>% as.character() %>% as.numeric() < 400, ]
+```
+
+
+```{r}
+prospective_data = merge(
+  prospective_data,
+  spss_import,
+  by.x = "Kod.patsiyenta_1",
+  by.y = "X.",
+  all.x = TRUE,
+  all.y = FALSE
+)
+```
+
+```{r}
+prospective_data$Antikoagulyant_1 = str_split(prospective_data$Antikoagulyant_1, " м") %>% map(., 1) %>% unlist()
+
+prospective_data$clear_drug = str_split(prospective_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist() %>% as.factor()
+```
+
+
+
+Посмотрим частоты кровотечений
+
+```{r}
+prospective_data$overall_hemorage = map_lgl(
+  1:nrow(prospective_data),
+  ~prospective_data[.x,c(prospective_data %>% names() %>% grepl(pattern ="Krovotecheniye"))] %>%
+    is.na(.) %>%
+    `!` %>%
+    any()
+)
+
+
+table(prospective_data$overall_hemorage)
+```
+20 кровотечений было.  
+  
+#### По препаратам:
+```{r}
+table(prospective_data$clear_drug, prospective_data$overall_hemorage)
+table(prospective_data$clear_drug, prospective_data$overall_hemorage) %>% prop.table(., 1)
+fisher.test(prospective_data$clear_drug, prospective_data$overall_hemorage)
+```
+```{r}
+pairwiseNominalIndependence(
+  table(prospective_data$clear_drug, prospective_data$overall_hemorage),
+  fisher = T,
+  gtest = F,
+  chisq = F,
+  method = "bonferroni"
+)
+```
+Ну, по уточненному p-value различий нет, а так Ксарелто подозрительно стремится у большему числу кровотечений, чем прадакса. Впрочем, вспоминая разницу в исходных характеристиках - немудрено.  
+  
+  
+```{r fig.width=11}
+par(mar = c(5, 5, 5, 10))
+barplot(
+  prop.table(
+    table(prospective_data$overall_hemorage, prospective_data$clear_drug),
+    2
+  ),
+  col = c( "lightgreen", "lightcoral"),
+  main = "Hemorrhage rates by drugs",
+  ylab = "Hemorrhage rates"
+)
+
+legend(
+  x = 5,
+  y = 1,
+  legend = c("No hemorrage", "Hemorrage"),
+  col = c("lightgreen", "lightcoral"),
+    pch = 15,
+  xpd = TRUE,
+  inset = c(-0.50, 0)
+)
+```
+
+
+####По хбп:
+```{r}
+table(prospective_data$CKD, prospective_data$overall_hemorage)
+table(prospective_data$CKD, prospective_data$overall_hemorage) %>% prop.table(., 1)
+fisher.test(prospective_data$CKD, prospective_data$overall_hemorage)
+```
+Ну, тенденция есть, что с ХБП кровят чаще, но без достоверностей.
+
+```{r}
+str(prospective_data)
+```
+
