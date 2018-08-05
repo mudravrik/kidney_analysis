@@ -1,5 +1,5 @@
 ---
-title: "CKD descriptive stats"
+title: "Some additional tasks"
 output:
   html_document:
     df_print: paged
@@ -75,9 +75,14 @@ prospective_data$Antikoagulyant_1 = str_split(prospective_data$Antikoagulyant_1,
 prospective_data$clear_drug = str_split(prospective_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist() %>% as.factor()
 ```
 
+### Не помню, были ли таблицы по ХБП и драгам:
+```{r}
+table(prospective_data$clear_drug, prospective_data$CKD)
+table(prospective_data$Antikoagulyant_1, prospective_data$CKD)
+```
 
 
-Посмотрим частоты кровотечений
+### Посмотрим частоты кровотечений
 
 ```{r}
 prospective_data$overall_hemorage = map_lgl(
@@ -144,6 +149,249 @@ fisher.test(prospective_data$CKD, prospective_data$overall_hemorage)
 Ну, тенденция есть, что с ХБП кровят чаще, но без достоверностей.
 
 ```{r}
-str(prospective_data)
+par(mar = c(5, 5, 5, 10))
+barplot(
+  prop.table(
+    table(prospective_data$overall_hemorage, prospective_data$CKD),
+    2
+  ),
+  col = c( "lightgreen", "lightcoral"),
+  main = "Hemorrhage rates by CKD",
+  names.arg = c("No CKD", "with CKD"),
+  ylab = "Hemorrhage rates"
+)
+
+legend(
+  x = 2.5,
+  y = 1,
+  legend = c("No hemorrage", "Hemorrage"),
+  col = c("lightgreen", "lightcoral"),
+    pch = 15,
+  xpd = TRUE,
+  inset = c(-0.50, 0)
+)
+```
+
+
+#### Препарат и ХБП
+```{r}
+table(prospective_data$CKD, prospective_data$clear_drug, prospective_data$overall_hemorage)
+table(prospective_data$CKD, prospective_data$clear_drug, prospective_data$overall_hemorage) %>% prop.table(.,c(1,2))
+print("Слегка сложная таблица для понимания, потому что три переменные. ПЕрвая таблица - это доли некровивших для сочетания препарат+хбп, вторая часть - частоты собственно кровотечений.")
+
+drug_ckd_model = glm(overall_hemorage~CKD+clear_drug, data = prospective_data, family = binomial())
+
+summary(drug_ckd_model)
+
+print("Это опять отношения шансов, но тут, кстати, опять вылезает влияение ксарелты - кажется, на ней кровят почаще.")
+options(scipen=999)
+exp(coef(drug_ckd_model))
+```
+
+```{r fig.width=10}
+par(mar = c(5, 5, 5, 10))
+barplot(
+  cbind(
+    table(prospective_data$overall_hemorage[prospective_data$CKD == "есть"], prospective_data$clear_drug[prospective_data$CKD == "есть"])[,1],
+    table(prospective_data$overall_hemorage[prospective_data$CKD == "нет"], prospective_data$clear_drug[prospective_data$CKD == "нет"])[,1],
+    table(prospective_data$overall_hemorage[prospective_data$CKD == "есть"], prospective_data$clear_drug[prospective_data$CKD == "есть"])[,2],
+    table(prospective_data$overall_hemorage[prospective_data$CKD == "нет"], prospective_data$clear_drug[prospective_data$CKD == "нет"])[,2],
+    table(prospective_data$overall_hemorage[prospective_data$CKD == "есть"], prospective_data$clear_drug[prospective_data$CKD == "есть"])[,3],
+    table(prospective_data$overall_hemorage[prospective_data$CKD == "нет"], prospective_data$clear_drug[prospective_data$CKD == "нет"])[,3],
+    table(prospective_data$overall_hemorage[prospective_data$CKD == "есть"], prospective_data$clear_drug[prospective_data$CKD == "есть"])[,4],
+    table(prospective_data$overall_hemorage[prospective_data$CKD == "нет"], prospective_data$clear_drug[prospective_data$CKD == "нет"])[,4]
+  ),
+  col = c("lightgreen", "lightcoral"),
+  names.arg = rep(c("CKD","No CKD"), 4),
+  cex.names = 0.6)
+text(x=c(1.3, 3.7, 6.1, 8.5), y=-3, levels(prospective_data$clear_drug), cex=1, srt=0, xpd=TRUE)
+legend(
+  x = 10,
+  y = 15,
+  legend = c("No hemorrage", "Hemorrage"),
+  col = c("lightgreen", "lightcoral"),
+    pch = 15,
+  xpd = TRUE,
+  inset = c(-0.50, 0)
+)
+  
+
+```
+
+
+
+
+Тут можно попробовать посмотреть на взаимодействие параметров, например, увеличивает ли сочетание ксарелты и хб веротяность кровотечения.
+
+
+```{r}
+drug_ckd_interact_model = glm(overall_hemorage~CKD*clear_drug, data = prospective_data, family = binomial())
+
+summary(drug_ckd_interact_model)
+
+print("Тут, к сожалению, полная каша, потому что довольно тупо не хватает наблюдений. Их нужно сильно больше, чем есть в наличии")
+
+```
+
+
+#### Влияние HAS-BLED
+```{r}
+table(prospective_data$Ball.po.HAS.BLED_1, prospective_data$overall_hemorage)
+
+table(prospective_data$Ball.po.HAS.BLED_1, prospective_data$overall_hemorage) %>% prop.table(., 1)
+
+fisher.test(prospective_data$Ball.po.HAS.BLED_1, prospective_data$overall_hemorage)
+```
+
+```{r}
+par(mar = c(5, 5, 5, 10))
+barplot(
+  table(prospective_data$overall_hemorage, prospective_data$Ball.po.HAS.BLED_1),
+  col = c( "lightgreen", "lightcoral"),
+  main = "Hemorrhage rates by CKD",
+  ylab = "Hemorrhage rates"
+)
+
+legend(
+  x = 5,
+  y = 30,
+  legend = c("No hemorrage", "Hemorrage"),
+  col = c("lightgreen", "lightcoral"),
+    pch = 15,
+  xpd = TRUE,
+  inset = c(-0.50, 0)
+)
+```
+
+```{r}
+has_bled_model = glm(overall_hemorage~Ball.po.HAS.BLED_1, data = prospective_data, family = binomial())
+
+summary(has_bled_model)
+
+print("Это отношения шансов в модели по отношению к 0 баллов по HAS-BLED, 4 баллам понятно очень плохо, потому что 1 пациент, который не кровил")
+options(scipen=4)
+exp(coef(has_bled_model))
+```
+Тут немного логистической регрессии, но все равно ничего достоверного. Почти все пациенты с 1 или 2 баллами, которые особо никак не различаются между собой.  
+  
+  
+#### Типы кровотечений  
+
+```{r}
+hemo_types =  rbind(
+table(prospective_data[prospective_data$CKD == "есть",c(prospective_data %>% names() %>% grepl(pattern ="Krovotecheniye"))] %>% unlist()),
+table(prospective_data[prospective_data$CKD == "нет",c(prospective_data %>% names() %>% grepl(pattern ="Krovotecheniye"))] %>% unlist())
+)
+
+row.names(hemo_types) = c("ckd", "no ckd")
+hemo_types
+hemo_types_prop = rbind(
+  hemo_types[1,]/length(prospective_data$CKD[prospective_data$CKD == "есть"]),
+  hemo_types[2,]/length(prospective_data$CKD[prospective_data$CKD == "нет"])
+)
+row.names(hemo_types_prop) = c("ckd", "no ckd")
+
+hemo_types_prop
+
+```
+
+```{r fig.height=9, fig.width=15}
+par(mar = c(8, 5, 5, 5))
+barplot(hemo_types_prop,
+        beside = T,
+        ylab = "Rates",
+        col = c("lightcoral", "lightgreen"),
+        # cex.names = 0.7,
+        space = c(0,0.5),
+        xaxt = "n")
+legend(
+  x = 20,
+  y = 0.15,
+  legend = c("No CKD", "CKD"),
+  col = c("lightgreen", "lightcoral"),
+    pch = 15,
+  xpd = TRUE,
+  inset = c(-0.50, 0)
+)
+text(x=(1:8*2.5)-1, y=-.02, colnames(hemo_types), cex=1, srt=45, xpd=TRUE)
+```
+Честно говоря, я тут не очень представляю, как посмотреть "структуру", особенно учитывая, что кто-то мог кровить и по нескольку раз. Но попробуем что-то вот такое:
+```{r}
+cbind(hemo_types, table(prospective_data$CKD[!prospective_data$overall_hemorage]) %>% rev()) %>% fisher.test()
+
+for (i in 1:ncol(hemo_types)) {
+  print(colnames(hemo_types)[i])
+  fisher.test(cbind(hemo_types[,i],
+                    c(length(prospective_data$CKD[prospective_data$CKD == "есть"]) - hemo_types[1,i],
+                      length(prospective_data$CKD[prospective_data$CKD == "нет"]) - hemo_types[2,i]))) %>% print()
+  
+}
+
+```
+Но что-то все равно ничего хорошего из этого не получается. Другой вариант - выкинуть вообще не кровивших из таблицы частот:
+
+```{r}
+fisher.test(hemo_types)
+
+for (i in 1:ncol(hemo_types)) {
+  print(colnames(hemo_types)[i])
+  fisher.test(cbind(hemo_types[,i],
+                    c(rowSums(hemo_types[,-i])))) %>% print()
+  
+}
+```
+В общем, опять ничего хорошего, потому что слишком мало кровотечений у пациентов без ХБП.  
+
+
+
+
+
+#### ХБП и СД
+
+```{r}
+prospective_data$SD_CKD = map_chr(1:nrow(prospective_data),
+                                  ~ if (prospective_data$CKD[.] == "есть" &
+                                        prospective_data$SD_1[.] == TRUE) {
+                                    "CKD+SD"
+                                  } else if (prospective_data$CKD[.] == "есть" &
+                                             prospective_data$SD_1[.] == FALSE) {
+                                    "CKD"
+                                  } else if (prospective_data$CKD[.] == "нет" &
+                                             prospective_data$SD_1[.] == TRUE) {
+                                    "SD"
+                                  } else{
+                                    "Nothing"
+                                  })
+table(prospective_data$SD_CKD)
+table(prospective_data$SD_CKD, prospective_data$overall_hemorage)
+prop.table(table(prospective_data$SD_CKD, prospective_data$overall_hemorage), 1)
+```
+
+```{r}
+sd_ckd_model = glm(overall_hemorage~CKD+SD_1, data = prospective_data, family = binomial())
+
+summary(sd_ckd_model)
+
+print("Это опять отношения шансов, но они опять не слишком достоверные")
+options(scipen=4)
+exp(coef(sd_ckd_model))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+# names(prospective_data)
+# prospective_data$SD_1
+# prospective_data[,c("SD_1","CKD","SD_CKD")]
 ```
 
