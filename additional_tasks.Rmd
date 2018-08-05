@@ -378,9 +378,17 @@ exp(coef(sd_ckd_model))
 ```
 
 
+### Просто СД и кровотечения
 
+```{r}
+table(prospective_data$SD_1, prospective_data$overall_hemorage)
+table(prospective_data$SD_1, prospective_data$overall_hemorage) %>% prop.table(., 1)
+```
 
-
+```{r}
+fisher.test(table(prospective_data$SD_1, prospective_data$overall_hemorage))
+```
+Совершенно никакой разницы.  
 
 
 

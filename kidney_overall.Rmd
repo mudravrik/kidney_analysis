@@ -4,6 +4,7 @@ author: "Ivan Tsarev, mudravr@gmail.com"
 output:
   html_document:
     df_print: paged
+    code_folding: hide
 knit: (function(inputFile, encoding) {
   rmarkdown::render(inputFile, encoding = encoding, output_dir = "reports") })
 ---
