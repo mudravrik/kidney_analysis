@@ -1,0 +1,311 @@
+---
+title: "End-to-end kidney function with CKD and drugs analysis"
+author: "Ivan Tsarev, mudravr@gmail.com"
+output:
+  html_document:
+    df_print: paged
+    code_folding: hide
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "reports") })
+---
+
+```{r}
+source("reshaper.R", encoding = "UTF-8")
+source("usefull_scripts.R", encoding = "UTF-8")
+```
+
+```{r}
+required_packages = c(
+  "foreign",
+  "magrittr",
+  "purrr",
+  "stringi",
+  "stringr",
+  "reshape2",
+  "ggplot2"
+)
+
+for (package in required_packages) {
+    if (!require(package, character.only=T, quietly=T)) {
+        install.packages(package)
+        library(package, character.only=T)
+    }
+}
+```
+
+```{r}
+DEF_COLOR = "lightblue"
+```
+
+```{r}
+full_data = access_import_reshape("second_iter_vars.xlsx")
+
+names(full_data) = stri_trans_general(names(full_data), "russian-latin/bgn")
+
+names(full_data)[grepl("Kreatinin", names(full_data))] = map_chr(1:8, ~paste0("creat_", .x))
+
+full_data$last_visit_index = map_int(1:nrow(full_data), ~full_data[.x, 2:9] %>% is.na() %>% `!` %>% which() %>% max())
+```
+
+
+**Выкидываем всех с одним визитом, отсутствием креатинина на 1 визите или креатинином больше 400**
+```{r}
+prospective_data = full_data[!is.na(full_data$creat_1) & !is.na(full_data$creat_2) & full_data$creat_1 %>% as.character() %>% as.numeric() < 400, ]
+```
+
+```{r}
+get_last_visit_value = function(var_name, full_data_frame = full_data){
+  var_name = map_chr(full_data_frame$last_visit_index, ~paste(var_name, .x, sep = "", collapse = ""))
+  
+  tmp = map(1:length(var_name), ~full_data_frame[.x, var_name[.x]]) %>% unlist()
+  
+  return(tmp)
+}
+```
+
+```{r}
+spss_import = read.spss("WARD-AF.sav", to.data.frame = T)
+
+spss_import = spss_import[, c("X.", "CKD", "CKD_Stage1")]
+
+```
+
+```{r}
+prospective_data = merge(
+  prospective_data,
+  spss_import,
+  by.x = "Kod.patsiyenta_1",
+  by.y = "X.",
+  all.x = TRUE,
+  all.y = FALSE
+)
+
+prospective_data = map_df(prospective_data, as.character) #pretty shity move, i know
+```
+
+```{r}
+prospective_data$Antikoagulyant_1 = str_split(prospective_data$Antikoagulyant_1, " м") %>% map(., 1) %>% unlist()
+
+prospective_data$clear_drug = str_split(prospective_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist() %>% as.factor()
+
+
+prospective_data$overall_hemorage = map_lgl(
+  1:nrow(prospective_data),
+  ~prospective_data[.x,c(prospective_data %>% names() %>% grepl(pattern ="Krovotecheniye"))] %>%
+    is.na(.) %>%
+    `!` %>%
+    any()
+)
+```
+
+
+```{r}
+prospective_data$creat_last = get_last_visit_value("creat_", full_data_frame = prospective_data) %>% as.numeric()
+
+prospective_data$creat_diff = prospective_data$creat_last - as.numeric(prospective_data$creat_1)
+
+sprintf("Первое значение: %s        Последнее значение: %s        Разница: %f", 
+  prospective_data$creat_1[1],
+  prospective_data$creat_last[1],
+  prospective_data$creat_diff[1]
+)
+
+```
+Обратите внимание, что мы вычитаем из конечного результата базовое значение креатинина. Таким образом, положительные значения - это нарастание показателя во времени, отрицательные - снижение показателя.
+Подобная логика будет использоваться и со всеми остальными показателями. Считаете, что нужно иначе? Сообщите!
+&nbsp;
+&nbsp;  
+
+
+```{r}
+prospective_data$last_visit_date = get_last_visit_value("Data.vizita_", full_data_frame = prospective_data)
+
+prospective_data$follow_up_length = {prospective_data$last_visit_date %>% as.numeric() %>% as.Date(origin = "1970-01-01")} - {prospective_data$Data.vizita_1 %>% as.numeric() %>% as.Date(origin = "1970-01-01")}
+```
+
+```{r}
+prospective_data$creat_diff_rate = prospective_data$creat_diff / (as.double(prospective_data$follow_up_length)/30.5)
+```
+
+```{r}
+prospective_data$cocroft_last = get_last_visit_value("KK.Kokrofta.Golta_", full_data_frame = prospective_data) %>% as.numeric()
+prospective_data$cocroft_diff = prospective_data$cocroft_last - as.numeric(prospective_data$KK.Kokrofta.Golta_1)
+prospective_data$cocroft_diff_rate = prospective_data$cocroft_diff / (as.double(prospective_data$follow_up_length)/30.5)
+```
+
+```{r}
+prospective_data$mdrd_last = get_last_visit_value("SKF.MDRD_", full_data_frame = prospective_data) %>% as.numeric()
+prospective_data$mdrd_diff = prospective_data$mdrd_last - as.numeric(prospective_data$SKF.MDRD_1)
+prospective_data$mdrd_diff_rate = prospective_data$mdrd_diff / (as.double(prospective_data$follow_up_length)/30.5)
+```
+
+```{r}
+prospective_data$ckdepi_last = get_last_visit_value("SKF.CKD.EPI_", full_data_frame = prospective_data) %>% as.numeric()
+prospective_data$ckdepi_diff = prospective_data$ckdepi_last - as.numeric(prospective_data$SKF.CKD.EPI_1)
+prospective_data$ckdepi_diff_rate = prospective_data$ckdepi_diff / (as.double(prospective_data$follow_up_length)/30.5)
+```
+
+```{r}
+prospective_data$CKD = as.factor(prospective_data$CKD)
+```
+
+
+
+
+### Динамики почек и ХБП
+#### Креатинин
+*Тест Шапиро-Уилкса - это нормальность данных, дальше - медиана с квартилями или среднее с SD и достоверность различий между двумя группами.*
+```{r}
+print("Creatinine")
+describe_variable(prospective_data$creat_diff_rate, prospective_data$CKD)
+```
+
+```{r}
+boxplot(prospective_data$creat_diff_rate, prospective_data$CKD,
+        names = c("With CKD", "Without CKD"),
+        ylab = "Creatinine changes rate, µmol/L/month")
+```
+
+
+```{r}
+print("MDRD")
+describe_variable(prospective_data$mdrd_diff_rate, prospective_data$CKD)
+```
+
+```{r}
+boxplot(prospective_data$mdrd_diff_rate, prospective_data$CKD,
+        names = c("With CKD", "Without CKD"),
+        ylab = "MDRD eGFR changes rate, mL/min/1.73 m2/month")
+```
+
+```{r}
+print("Cokcroft-Gault")
+describe_variable(prospective_data$cocroft_diff_rate, prospective_data$CKD)
+```
+
+```{r}
+boxplot(prospective_data$cocroft_diff_rate, prospective_data$CKD,
+        names = c("With CKD", "Without CKD"),
+        ylab = "Cocroft-Gault changes rate, mL/min/month")
+```
+
+```{r}
+print("CKD-EPI")
+describe_variable(prospective_data$ckdepi_diff_rate, prospective_data$CKD)
+```
+
+```{r}
+boxplot(prospective_data$ckdepi_diff_rate, prospective_data$CKD,
+        names = c("With CKD", "Without CKD"),
+        ylab = "CKD-EPI eGFR changes rate, mL/min/1.73 m2/month")
+```
+
+
+### Начальные-конечные значения по препаратам
+#### Креатинин
+
+```{r}
+for (drug in levels(prospective_data$clear_drug)) {
+  print(drug)
+  wilcox.test(prospective_data$creat_1[prospective_data$clear_drug == drug] %>% as.numeric(),
+              prospective_data$creat_last[prospective_data$clear_drug == drug] %>% as.numeric(),
+              paired = T) %>% print()
+}
+```
+
+
+```{r}
+melted_tmp = melt(as.data.frame(prospective_data[,c("creat_1", "creat_last","clear_drug")]), id.vars = "clear_drug")
+melted_tmp$value %<>% as.character() %>% as.numeric()
+
+
+ggplot(data = melted_tmp, aes(x=clear_drug, y=value)) +
+  geom_boxplot(aes(fill=variable)) +
+  labs(x = "", y = "Creatinine, µmol/L ") +
+  scale_fill_discrete(labels = c("Starting value", "Final value"))
+```
+
+
+#### Cokcroft
+
+```{r}
+for (drug in levels(prospective_data$clear_drug)) {
+  print(drug)
+  wilcox.test(prospective_data$KK.Kokrofta.Golta_1[prospective_data$clear_drug == drug] %>% as.numeric(),
+              prospective_data$cocroft_last[prospective_data$clear_drug == drug] %>% as.numeric(),
+              paired = T) %>% print()
+}
+```
+
+
+```{r}
+prospective_data$cocroft_last_chr = prospective_data$cocroft_last %>% as.character()
+
+melted_tmp = melt(as.data.frame(prospective_data[, c("KK.Kokrofta.Golta_1", "cocroft_last_chr", "clear_drug")]), id.vars = "clear_drug")
+melted_tmp$value %<>% as.character() %>% as.numeric()
+
+
+ggplot(data = melted_tmp, aes(x = clear_drug, y = value)) +
+  geom_boxplot(aes(fill = variable)) +
+  labs(x = "", y = "Cokcroft-Gault, mL/min") +
+  scale_fill_discrete(labels = c("Starting value", "Final value"))
+```
+
+#### MDRD
+
+```{r}
+for (drug in levels(prospective_data$clear_drug)) {
+  print(drug)
+  wilcox.test(prospective_data$SKF.MDRD_1[prospective_data$clear_drug == drug] %>% as.numeric(),
+              prospective_data$mdrd_last[prospective_data$clear_drug == drug] %>% as.numeric(),
+              paired = T) %>% print()
+}
+```
+
+
+```{r}
+prospective_data$mdrd_last_chr = prospective_data$mdrd_last %>% as.character()
+
+melted_tmp = melt(as.data.frame(prospective_data[, c("SKF.MDRD_1", "mdrd_last_chr", "clear_drug")]), id.vars = "clear_drug")
+melted_tmp$value %<>% as.character() %>% as.numeric()
+
+
+ggplot(data = melted_tmp, aes(x = clear_drug, y = value)) +
+  geom_boxplot(aes(fill = variable)) +
+  labs(x = "", y = "MDRD, mL/min/1.73m2") +
+  scale_fill_discrete(labels = c("Starting value", "Final value"))
+```
+
+#### MDRD
+
+```{r}
+for (drug in levels(prospective_data$clear_drug)) {
+  print(drug)
+  wilcox.test(prospective_data$SKF.CKD.EPI_1[prospective_data$clear_drug == drug] %>% as.numeric(),
+              prospective_data$ckdepi_last[prospective_data$clear_drug == drug] %>% as.numeric(),
+              paired = T) %>% print()
+}
+```
+
+
+```{r}
+prospective_data$ckdepi_last_chr = prospective_data$ckdepi_last %>% as.character()
+
+melted_tmp = melt(as.data.frame(prospective_data[, c("SKF.CKD.EPI_1", "ckdepi_last_chr", "clear_drug")]), id.vars = "clear_drug")
+melted_tmp$value %<>% as.character() %>% as.numeric()
+
+
+ggplot(data = melted_tmp, aes(x = clear_drug, y = value)) +
+  geom_boxplot(aes(fill = variable)) +
+  labs(x = "", y = "CKD-EPI, mL/min/1.73m2") +
+  scale_fill_discrete(labels = c("Starting value", "Final value"))
+```
+  
+*Честно говоря, все это выглядит как нехватка времени наблюдения. Нет никакой разницы между начальной и конечной точкой ВО ВСЕХ СЛУЧАЯХ. Как-то это не оптимистично. Перекрестный анализ ХБП+Препарат в таком случае упрется еще и в недостаток пациентов, и точно не покажет никакой достоверности. Смысла его проводить особо не вижу*
+
+
+```{r}
+#names(prospective_data[,grepl(pattern = "_1", x = names(prospective_data))])
+```
+
+
