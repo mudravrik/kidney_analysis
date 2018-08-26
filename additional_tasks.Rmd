@@ -72,7 +72,15 @@ prospective_data = merge(
 ```{r}
 prospective_data$Antikoagulyant_1 = str_split(prospective_data$Antikoagulyant_1, " м") %>% map(., 1) %>% unlist()
 
-prospective_data$clear_drug = str_split(prospective_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist() %>% as.factor()
+prospective_data$clear_drug = str_split(prospective_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist()
+
+prospective_data$clear_drug[prospective_data$clear_drug == "Прадакса"] = "Дабигатран"
+
+prospective_data$clear_drug[prospective_data$clear_drug == "Ксарелто"] = "Ривароксабан"
+
+prospective_data$clear_drug[prospective_data$clear_drug == "Эликвис"] = "Апиксабан"
+
+prospective_data$clear_drug %<>% as.factor()
 ```
 
 ### Не помню, были ли таблицы по ХБП и драгам:
@@ -116,7 +124,7 @@ pairwiseNominalIndependence(
 Ну, по уточненному p-value различий нет, а так Ксарелто подозрительно стремится у большему числу кровотечений, чем прадакса. Впрочем, вспоминая разницу в исходных характеристиках - немудрено.  
   
   
-```{r fig.width=11}
+```{r fig.width=14}
 par(mar = c(5, 5, 5, 10))
 barplot(
   prop.table(
@@ -124,14 +132,14 @@ barplot(
     2
   ),
   col = c( "lightgreen", "lightcoral"),
-  main = "Hemorrhage rates by drugs",
-  ylab = "Hemorrhage rates"
+  main = "Частоты кровотечений по группам",
+  ylab = "Доля"
 )
 
 legend(
   x = 5,
   y = 1,
-  legend = c("No hemorrage", "Hemorrage"),
+  legend = c("Нет кровотечений", "С кровотечениями"),
   col = c("lightgreen", "lightcoral"),
     pch = 15,
   xpd = TRUE,
@@ -156,15 +164,15 @@ barplot(
     2
   ),
   col = c( "lightgreen", "lightcoral"),
-  main = "Hemorrhage rates by CKD",
-  names.arg = c("No CKD", "with CKD"),
-  ylab = "Hemorrhage rates"
+  main = "Частоты кровотечений у пациентов с ХБП и без ХБП",
+  names.arg = c("Без ХБП", "С ХБП"),
+  ylab = "Доля"
 )
 
 legend(
   x = 2.5,
   y = 1,
-  legend = c("No hemorrage", "Hemorrage"),
+  legend = c("Без кровотечения", "С кровотеченим"),
   col = c("lightgreen", "lightcoral"),
     pch = 15,
   xpd = TRUE,
@@ -201,14 +209,16 @@ barplot(
     table(prospective_data$overall_hemorage[prospective_data$CKD == "есть"], prospective_data$clear_drug[prospective_data$CKD == "есть"])[,4],
     table(prospective_data$overall_hemorage[prospective_data$CKD == "нет"], prospective_data$clear_drug[prospective_data$CKD == "нет"])[,4]
   ),
+  main = "Частоты кровотечений в группах по ХБП и препаратам",
+  ylab = "Число пациентов",
   col = c("lightgreen", "lightcoral"),
-  names.arg = rep(c("CKD","No CKD"), 4),
+  names.arg = rep(c("С ХБП","Без ХБП"), 4),
   cex.names = 0.6)
 text(x=c(1.3, 3.7, 6.1, 8.5), y=-3, levels(prospective_data$clear_drug), cex=1, srt=0, xpd=TRUE)
 legend(
   x = 10,
   y = 15,
-  legend = c("No hemorrage", "Hemorrage"),
+  legend = c("Без кровотечения", "С кровотечениями"),
   col = c("lightgreen", "lightcoral"),
     pch = 15,
   xpd = TRUE,
@@ -248,14 +258,15 @@ par(mar = c(5, 5, 5, 10))
 barplot(
   table(prospective_data$overall_hemorage, prospective_data$Ball.po.HAS.BLED_1),
   col = c( "lightgreen", "lightcoral"),
-  main = "Hemorrhage rates by CKD",
-  ylab = "Hemorrhage rates"
+  main = "Частота кровотечений \nпри разных исходных баллах HAS-BLED",
+  ylab = "Число пациентов",
+  xlab = "Балл HAS-BLED"
 )
 
 legend(
-  x = 5,
+  x = 6,
   y = 30,
-  legend = c("No hemorrage", "Hemorrage"),
+  legend = c("Без кровотечения", "С кровотечением"),
   col = c("lightgreen", "lightcoral"),
     pch = 15,
   xpd = TRUE,
@@ -299,15 +310,16 @@ hemo_types_prop
 par(mar = c(8, 5, 5, 5))
 barplot(hemo_types_prop,
         beside = T,
-        ylab = "Rates",
+        ylab = "Частоты",
         col = c("lightcoral", "lightgreen"),
         # cex.names = 0.7,
         space = c(0,0.5),
-        xaxt = "n")
+        xaxt = "n",
+        main = "Структура кровотечений в группах с ХБП и без ХБП")
 legend(
   x = 20,
   y = 0.15,
-  legend = c("No CKD", "CKD"),
+  legend = c("Без ХБП", "С ХБП"),
   col = c("lightgreen", "lightcoral"),
     pch = 15,
   xpd = TRUE,
