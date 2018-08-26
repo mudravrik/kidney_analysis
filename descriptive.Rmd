@@ -137,7 +137,15 @@ axis(1, at = seq(0, 630, 30))
 row.names(cleaned_data) = cleaned_data$patient_code
 first_visit_data = cleaned_data[, str_detect(names(cleaned_data), "_1$")]
 
-first_visit_data$clear_drug = str_split(first_visit_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist() %>% as.factor()
+first_visit_data$clear_drug = str_split(first_visit_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist()
+
+first_visit_data$clear_drug[first_visit_data$clear_drug == "Прадакса"] = "Дабигатран"
+
+first_visit_data$clear_drug[first_visit_data$clear_drug == "Ксарелто"] = "Ривароксабан"
+
+first_visit_data$clear_drug[first_visit_data$clear_drug == "Эликвис"] = "Апиксабан"
+
+first_visit_data$clear_drug %<>% as.factor()
 ```
 
 
@@ -147,7 +155,7 @@ first_visit_data$clear_drug = str_split(first_visit_data$Antikoagulyant_1, " ") 
 table(first_visit_data$clear_drug)
 ```
 
-```{r fig.width=9}
+```{r fig.width=12}
 barplot(
   table(first_visit_data$clear_drug),
   col = DEF_COLOR,
@@ -224,8 +232,8 @@ fisher.test(first_visit_data$Pol.patsiyenta_1,
             first_visit_data$clear_drug)
 ```
 
-```{r fig.width=10}
-par(mar = c(5, 5, 5, 5))
+```{r fig.width=12}
+par(mar = c(5, 5, 5, 6))
 barplot(
   prop.table(
     table(
@@ -235,14 +243,14 @@ barplot(
     2
   ),
   col = c(DEF_COLOR, "lightgreen"),
-  main = "Gender distribution by drugs",
-  ylab = "Gender proportion"
+  main = "Распределение по полу пациентов в группах",
+  ylab = "Доля"
 )
 
 legend(
   x = 5,
   y = 1,
-  legend = c("Female", "Male"),
+  legend = c("Женщины", "Мужчины"),
   col = c(DEF_COLOR, "lightgreen"),
   pch = 15,
   xpd = TRUE,
@@ -365,7 +373,7 @@ table(first_visit_data$clear_drug, first_visit_data$chads_cat)
 fisher.test(first_visit_data$clear_drug, first_visit_data$chads_cat)
 ```
 
-```{r fig.width=12}
+```{r fig.height=12, fig.width=15}
 par(mar = c(5, 5, 5, 13))
 barplot(
   prop.table(
@@ -373,8 +381,8 @@ barplot(
     2
   ),
   col = c(DEF_COLOR, "lightgreen", "lightcoral"),
-  main = "CHA2DS2VASc groups by drugs",
-  ylab = "CHA2DS2VASc groups"
+  main = "Баллы по CHA2DS2VASc в группах",
+  ylab = "Доля"
 )
 
 legend(
@@ -423,7 +431,7 @@ barplot(first_visit_data$Ball.po.HAS.BLED_1 %>% table(),
 table(first_visit_data$Ball.po.HAS.BLED_1, first_visit_data$clear_drug)
 ```
 
-```{r fig.width=10}
+```{r fig.width=12}
 par(mar = c(5, 5, 5, 5))
 
 barplot(
@@ -432,8 +440,8 @@ barplot(
     first_visit_data$clear_drug
   ) %>% prop.table(., 2),
   col = brewer.pal(n = first_visit_data$Ball.po.HAS.BLED_1 %>% unique() %>% length, "Blues"),
-  main = "HAS-BLED distribution by drugs",
-  ylab = "HAS-BLED proportion"
+  main = "Баллы по HAS-BLED в группах",
+  ylab = "Доля"
 )
 legend(
   x = 5,
@@ -486,10 +494,10 @@ quantile(first_visit_data$creatinine, na.rm = T)
 kruskal.test(first_visit_data$creatinine~first_visit_data$clear_drug)
 ```
 
-```{r fig.width=10}
+```{r fig.width=12}
 boxplot(first_visit_data$creatinine~first_visit_data$clear_drug,
-        ylab = "Creatinine",
-        main = "Creatinine distribution by drugs",
+        ylab = "Креатинин, мкмоль/л",
+        main = "Исходный креатинин по группам",
         col = DEF_COLOR)
 ```
 Не отличались, и слава богу.  
@@ -535,10 +543,10 @@ kruskal.test(first_visit_data$SKF.CKD.EPI_1~first_visit_data$clear_drug)
 pairwise.wilcox.test(first_visit_data$SKF.CKD.EPI_1, first_visit_data$clear_drug)
 ```
 
-```{r fig.width=10}
+```{r fig.width=12}
 boxplot(first_visit_data$SKF.CKD.EPI_1~first_visit_data$clear_drug,
-        ylab = "CKD-EPI",
-        main = "CKD-EPI distribution by drugs",
+        ylab = "СКФ, мл/мин/1.73м2",
+        main = "Исходный СКФ по CKD-EPI в группах",
         col = DEF_COLOR)
 ```
 У вас опять прадакса с эликвисом отличаются.
@@ -553,9 +561,9 @@ first_visit_data$KK.Kokrofta.Golta_1 %<>% as.numeric()
 hist(first_visit_data$KK.Kokrofta.Golta_1,
      col = DEF_COLOR,
      breaks = 20,
-     xlab = "CKD_EPI",
+     xlab = "Клиресн креатинина, мл/мин",
      ylab = "Number of patients",
-     main = "Creatinine distribution")
+     main = "Creatinine clearence distribution")
 ```
 И СКФ 10 у того же.
 &nbsp;
@@ -578,10 +586,10 @@ kruskal.test(first_visit_data$KK.Kokrofta.Golta_1~first_visit_data$clear_drug)
 pairwise.wilcox.test(first_visit_data$KK.Kokrofta.Golta_1, first_visit_data$clear_drug)
 ```
 
-```{r fig.width=10}
+```{r fig.width=12}
 boxplot(first_visit_data$KK.Kokrofta.Golta_1~first_visit_data$clear_drug,
-        ylab = "Creatinine clearance",
-        main = "Creatinine clearance distribution by drugs",
+        ylab = "Клиренс креатинина, мл/мин",
+        main = "Исходный клиресн креатинина по Кокрафту-Голду в группах",
         col = DEF_COLOR)
 ```
 Тут тоже чть различия между прадаксой и варфарином.
@@ -662,13 +670,14 @@ barplot(
     2
   ),
   col = c(DEF_COLOR, "lightcoral"),
-  main = "Vessel disease rate by drugs"
+  main = "Наличие сосудистых заболеваний в анамнезе",
+  xlab = "Доля"
 )
 
 legend(
   x = 5,
   y = 1,
-  legend = c("W/out VD", "With VD"),
+  legend = c("Без СЗ", "С СЗ"),
   col = c(DEF_COLOR, "lightcoral"),
   pch = 15,
   xpd = TRUE,
@@ -786,12 +795,12 @@ pairwiseNominalIndependence(
 
 Ну, поправка на множественные сравнения спасает ситуацию, конечно. Но это прям на грани в паре варфарин-прадакса.
 
-```{r fig.width=10}
-par(mar = c(5,5,5,6))
+```{r fig.width=12}
+par(mar = c(5,5,5,6)) 
 barplot(table(first_visit_data$CKD_Stage1, first_visit_data$clear_drug) %>% prop.table(., 2),
         col = brewer.pal(n = first_visit_data$CKD_Stage1 %>% unique() %>% length, "Blues"),
-        main = "CKD stage by drug",
-        ylab = "CKD stage proportion"
+        main = "Стадия ХБП по группам",
+        ylab = "Доля"
         )
 
 legend(
