@@ -86,8 +86,15 @@ prospective_data = map_df(prospective_data, as.character) #pretty shity move, i 
 ```{r}
 prospective_data$Antikoagulyant_1 = str_split(prospective_data$Antikoagulyant_1, " м") %>% map(., 1) %>% unlist()
 
-prospective_data$clear_drug = str_split(prospective_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist() %>% as.factor()
+prospective_data$clear_drug = str_split(prospective_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist()
 
+prospective_data$clear_drug[prospective_data$clear_drug == "Прадакса"] = "Дабигатран"
+
+prospective_data$clear_drug[prospective_data$clear_drug == "Ксарелто"] = "Ривароксабан"
+
+prospective_data$clear_drug[prospective_data$clear_drug == "Эликвис"] = "Апиксабан"
+
+prospective_data$clear_drug %<>% as.factor()
 
 prospective_data$overall_hemorage = map_lgl(
   1:nrow(prospective_data),
@@ -162,8 +169,8 @@ describe_variable(prospective_data$creat_diff_rate, prospective_data$CKD)
 
 ```{r}
 boxplot(prospective_data$creat_diff_rate, prospective_data$CKD,
-        names = c("With CKD", "Without CKD"),
-        ylab = "Creatinine changes rate, µmol/L/month")
+        names = c("С ХБП", "Без ХБП"),
+        ylab = "Скорость изменения креатинина, ммоль/л/мес")
 ```
 
 
@@ -174,8 +181,8 @@ describe_variable(prospective_data$mdrd_diff_rate, prospective_data$CKD)
 
 ```{r}
 boxplot(prospective_data$mdrd_diff_rate, prospective_data$CKD,
-        names = c("With CKD", "Without CKD"),
-        ylab = "MDRD eGFR changes rate, mL/min/1.73 m2/month")
+        names = c("С ХБП", "Без ХБП"),
+        ylab = "Скорость изменений MDRD СКФ, мл/мин/1.73м2/мес")
 ```
 
 ```{r}
@@ -185,8 +192,8 @@ describe_variable(prospective_data$cocroft_diff_rate, prospective_data$CKD)
 
 ```{r}
 boxplot(prospective_data$cocroft_diff_rate, prospective_data$CKD,
-        names = c("With CKD", "Without CKD"),
-        ylab = "Cocroft-Gault changes rate, mL/min/month")
+        names = c("С ХБП", "Без ХБП"),
+        ylab = "Скорость изменения клиренса креатинина, мл/мин/мес")
 ```
 
 ```{r}
@@ -196,8 +203,8 @@ describe_variable(prospective_data$ckdepi_diff_rate, prospective_data$CKD)
 
 ```{r}
 boxplot(prospective_data$ckdepi_diff_rate, prospective_data$CKD,
-        names = c("With CKD", "Without CKD"),
-        ylab = "CKD-EPI eGFR changes rate, mL/min/1.73 m2/month")
+        names = c("С ХБП", "Без ХБП"),
+        ylab = "Скорость изменения CKD-EPI СКФ, мл/мин/1.73м2/мес")
 ```
 
 
@@ -221,8 +228,8 @@ melted_tmp$value %<>% as.character() %>% as.numeric()
 
 ggplot(data = melted_tmp, aes(x=clear_drug, y=value)) +
   geom_boxplot(aes(fill=variable)) +
-  labs(x = "", y = "Creatinine, µmol/L ") +
-  scale_fill_discrete(labels = c("Starting value", "Final value"))
+  labs(x = "", y = "Креатинин, мкмоль/л") +
+  scale_fill_discrete(labels = c("Начало наблюдения", "Конец наблюдения"), name = "")
 ```
 
 
@@ -247,8 +254,8 @@ melted_tmp$value %<>% as.character() %>% as.numeric()
 
 ggplot(data = melted_tmp, aes(x = clear_drug, y = value)) +
   geom_boxplot(aes(fill = variable)) +
-  labs(x = "", y = "Cokcroft-Gault, mL/min") +
-  scale_fill_discrete(labels = c("Starting value", "Final value"))
+  labs(x = "", y = "Клиренс креатинина, мл/мин") +
+  scale_fill_discrete(labels = c("Начало наблюдения", "Конец наблюдения"), name = "")
 ```
 
 #### MDRD
@@ -272,8 +279,8 @@ melted_tmp$value %<>% as.character() %>% as.numeric()
 
 ggplot(data = melted_tmp, aes(x = clear_drug, y = value)) +
   geom_boxplot(aes(fill = variable)) +
-  labs(x = "", y = "MDRD, mL/min/1.73m2") +
-  scale_fill_discrete(labels = c("Starting value", "Final value"))
+  labs(x = "", y = "СКФ по MDRD, мл/мин/1.73м2") +
+  scale_fill_discrete(labels = c("Начало наблюдения", "Конец наблюдения"), name = "")
 ```
 
 #### MDRD
@@ -297,8 +304,8 @@ melted_tmp$value %<>% as.character() %>% as.numeric()
 
 ggplot(data = melted_tmp, aes(x = clear_drug, y = value)) +
   geom_boxplot(aes(fill = variable)) +
-  labs(x = "", y = "CKD-EPI, mL/min/1.73m2") +
-  scale_fill_discrete(labels = c("Starting value", "Final value"))
+  labs(x = "", y = "СКФ по CKD-EPI, мл/мин/1.73м2") +
+  scale_fill_discrete(labels = c("Начало наблюдения", "Конец наблюдения"), name = "")
 ```
   
 *Честно говоря, все это выглядит как нехватка времени наблюдения. Нет никакой разницы между начальной и конечной точкой ВО ВСЕХ СЛУЧАЯХ. Как-то это не оптимистично. Перекрестный анализ ХБП+Препарат в таком случае упрется еще и в недостаток пациентов, и точно не покажет никакой достоверности. Смысла его проводить особо не вижу*
