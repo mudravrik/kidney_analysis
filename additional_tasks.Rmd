@@ -404,6 +404,36 @@ fisher.test(table(prospective_data$SD_1, prospective_data$overall_hemorage))
 
 
 
+### Кровотечения по стадиям ХБП
+
+```{r}
+table(prospective_data$CKD_Stage1, prospective_data$overall_hemorage)
+
+table(prospective_data$CKD_Stage1, prospective_data$overall_hemorage) %>% prop.table(., 1)
+
+fisher.test(prospective_data$CKD_Stage1, prospective_data$overall_hemorage)
+```
+
+```{r fig.width=14}
+par(mar = c(5, 5, 5, 10))
+barplot(
+  table(prospective_data$overall_hemorage, prospective_data$CKD_Stage1),
+  col = c( "lightgreen", "lightcoral"),
+  main = "Частота кровотечений \nпри разных исходных стадиях ХБП",
+  ylab = "Число пациентов",
+  xlab = "Стадиях ХБП"
+)
+
+legend(
+  x = 8,
+  y = 20,
+  legend = c("Без кровотечения", "С кровотечением"),
+  col = c("lightgreen", "lightcoral"),
+    pch = 15,
+  xpd = TRUE,
+  inset = c(-0.50, 0)
+)
+```
 
 
 
