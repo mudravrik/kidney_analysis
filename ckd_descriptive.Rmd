@@ -70,7 +70,15 @@ prospective_data = merge(
 ```{r}
 prospective_data$Antikoagulyant_1 = str_split(prospective_data$Antikoagulyant_1, " м") %>% map(., 1) %>% unlist()
 
-prospective_data$clear_drug = str_split(prospective_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist() %>% as.factor()
+prospective_data$clear_drug = str_split(prospective_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist()
+
+prospective_data$clear_drug[prospective_data$clear_drug == "Прадакса"] = "Дабигатран"
+
+prospective_data$clear_drug[prospective_data$clear_drug == "Ксарелто"] = "Ривароксабан"
+
+prospective_data$clear_drug[prospective_data$clear_drug == "Эликвис"] = "Апиксабан"
+
+prospective_data$clear_drug %<>% as.factor()
 ```
   
   

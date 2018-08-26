@@ -68,7 +68,15 @@ get_last_visit_value = function(var_name, full_data_frame = full_data){
 ```{r}
 cleared_data = full_data[, str_detect(names(full_data), "_1$")]
 
-cleared_data$clear_drug = str_split(cleared_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist() %>% as.factor()
+cleared_data$clear_drug = str_split(cleared_data$Antikoagulyant_1, " ") %>% map(., 1) %>% unlist()
+
+cleared_data$clear_drug[cleared_data$clear_drug == "Прадакса"] = "Дабигатран"
+
+cleared_data$clear_drug[cleared_data$clear_drug == "Ксарелто"] = "Ривароксабан"
+
+cleared_data$clear_drug[cleared_data$clear_drug == "Эликвис"] = "Апиксабан"
+
+cleared_data$clear_drug %<>% as.factor()
 
 cleared_data$last_visit_date = get_last_visit_value("Data.vizita_")
 
@@ -138,10 +146,10 @@ for (drug_name in levels(first_creat_data$clear_drug)) {
 
 ```
 
-```{r fig.width=9.5}
+```{r fig.width=12}
 boxplot(first_creat_data$creat_diff~first_creat_data$clear_drug,
-        ylab = "Absolute creatinine changes",
-        main = "Creatinine changes by drugs")
+        ylab = "Изменение креатинина, мкмоль/л",
+        main = "Изменение креатинина за время наблюдения")
 ```
 
 
@@ -213,10 +221,10 @@ for (drug_name in levels(creat_diff_data$clear_drug)) {
 }
 ```
 
-```{r fig.width=9.5}
+```{r fig.width=12}
 boxplot(creat_diff_data$creat_diff_rate~creat_diff_data$clear_drug,
-        ylab = "Creatinine changes rate",
-        main = "Creatinine changes rate by drugs")
+        ylab = "Скорость изменения креатинина, мкмоль/л/мес",
+        main = "Скорость изменения креатинина в группах")
 ```
 
 
@@ -288,10 +296,10 @@ for (drug_name in levels(epi_data$clear_drug)) {
 }
 ```
 
-```{r fig.width=9.5}
+```{r fig.width=12}
 boxplot(epi_data$epi_diff_rate~epi_data$clear_drug,
-        ylab = "CKD-EPI changes rate",
-        main = "CKD-EPI changes rate by drugs")
+        ylab = "Скорость изменения CKD-EPI СКФ, мл/мин/1.73м2/мес",
+        main = "Скорость изменения CKD-EPI СКФ в группах")
 ```
 
 
@@ -303,8 +311,9 @@ kruskal.test(epi_data$epi_diff_rate~epi_data$clear_drug)
 
 ```{r}
 boxplot(epi_data$epi_diff_rate~epi_data$SD_1,
-        ylab = "CKD-EPI changes rate",
-        main = "CKD-EPI changes rate by DM")
+        ylab = "Скорость изменения CKD-EPI СКФ, мл/мин/1.73м2/мес",
+        main = "Скорость изменения CKD-EPI СКФ в группах с СД и без него",
+        names = c("Без СД","С СД"))
 ```
 
 ```{r}
@@ -369,10 +378,10 @@ for (drug_name in levels(mdrd_data$clear_drug)) {
 }
 ```
 
-```{r fig.width=9.5}
+```{r fig.width=12}
 boxplot(mdrd_data$mdrd_diff_rate~mdrd_data$clear_drug,
-        ylab = "MDRD changes rate",
-        main = "MDRD changes rate by drugs")
+        ylab = "Скорость изменения MDRD СКФ, мл/мин/1.73м2/мес",
+        main = "Скорость изменения MDRD СКФ в группах")
 ```
 
 
@@ -381,11 +390,77 @@ kruskal.test(mdrd_data$mdrd_diff_rate~mdrd_data$clear_drug)
 ```
 
 
+### Кокрафт-Голд
+
 
 
 
 ```{r}
-# names(cleared_data)
+cleared_data$cocraft_last = get_last_visit_value("KK.Kokrofta.Golta_")
+
+cleared_data$cocraft_diff = {cleared_data$cocraft_last %>% as.numeric()} - {cleared_data$KK.Kokrofta.Golta_1 %>% as.numeric()}
+
+cleared_data$cocraft_diff_rate = cleared_data$cocraft_diff / (as.numeric(cleared_data$follow_up_length)/30.5)
+
+```
+
+```{r}
+cocraft_data = cleared_data[!is.na(cleared_data$cocraft_diff_rate), ]
+```
+
+
+```{r}
+hist(cocraft_data$cocraft_diff_rate, col = DEF_COLOR, breaks = 20, main = "Creatinine clearance changes rate distribution",
+     xlab = "Clearance monthly change rate from first to last visit",
+     ylab = "Number of patients")
+
+```
+  
+
+```{r}
+shapiro.test(cocraft_data$cocraft_diff_rate)
+quantile(cocraft_data$cocraft_diff_rate)
+```
+
+```{r}
+for (drug_name in levels(cocraft_data$clear_drug)) {
+  print(drug_name)
+  print(quantile(cocraft_data$cocraft_diff_rate[cocraft_data$clear_drug == drug_name]))
+}
+```
+
+```{r}
+par(mfrow = c(2, 2))
+for (drug_name in levels(cocraft_data$clear_drug)) {
+  hist(
+    cocraft_data$cocraft_diff_rate[cocraft_data$clear_drug == drug_name],
+    xlim = c(-12, 16),
+    ylim = c(0,12),
+    breaks = seq(-12,16,2),
+    col = DEF_COLOR,
+    main = drug_name,
+    xlab = "Clearance changes rate",
+    ylab = "Number of patients"
+  )
+}
+```
+
+```{r fig.width=12}
+boxplot(cocraft_data$cocraft_diff_rate~cocraft_data$clear_drug,
+        ylab = "Скорость изменения клиренса креатина, мл/мин/мес",
+        main = "Скорость изменения клиренса креатина в группах")
+```
+
+
+```{r}
+kruskal.test(cocraft_data$cocraft_diff_rate~cocraft_data$clear_drug)
+```
+
+
+
+
+```{r}
+#names(cleared_data)
 ```
 
 
