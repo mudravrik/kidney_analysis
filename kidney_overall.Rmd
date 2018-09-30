@@ -313,7 +313,8 @@ kruskal.test(epi_data$epi_diff_rate~epi_data$clear_drug)
 boxplot(epi_data$epi_diff_rate~epi_data$SD_1,
         ylab = "Скорость изменения CKD-EPI СКФ, мл/мин/1.73м2/мес",
         main = "Скорость изменения CKD-EPI СКФ в группах с СД и без него",
-        names = c("Без СД","С СД"))
+        names = c("Без СД","С СД"),
+        range = 0)
 ```
 
 ```{r}

@@ -172,7 +172,7 @@ barplot(
 legend(
   x = 2.5,
   y = 1,
-  legend = c("Без кровотечения", "С кровотеченим"),
+  legend = c("Без кровотечения", "С кровотечением"),
   col = c("lightgreen", "lightcoral"),
     pch = 15,
   xpd = TRUE,
@@ -208,22 +208,14 @@ barplot(
     table(prospective_data$overall_hemorage[prospective_data$CKD == "нет"], prospective_data$clear_drug[prospective_data$CKD == "нет"])[,3],
     table(prospective_data$overall_hemorage[prospective_data$CKD == "есть"], prospective_data$clear_drug[prospective_data$CKD == "есть"])[,4],
     table(prospective_data$overall_hemorage[prospective_data$CKD == "нет"], prospective_data$clear_drug[prospective_data$CKD == "нет"])[,4]
-  ),
+  )[2,],
   main = "Частоты кровотечений в группах по ХБП и препаратам",
   ylab = "Число пациентов",
-  col = c("lightgreen", "lightcoral"),
+  col = c("coral","lightcoral"),
   names.arg = rep(c("С ХБП","Без ХБП"), 4),
   cex.names = 0.6)
-text(x=c(1.3, 3.7, 6.1, 8.5), y=-3, levels(prospective_data$clear_drug), cex=1, srt=0, xpd=TRUE)
-legend(
-  x = 10,
-  y = 15,
-  legend = c("Без кровотечения", "С кровотечениями"),
-  col = c("lightgreen", "lightcoral"),
-    pch = 15,
-  xpd = TRUE,
-  inset = c(-0.50, 0)
-)
+text(x=c(1.3, 3.7, 6.1, 8.5), y=-1, levels(prospective_data$clear_drug), cex=1, srt=0, xpd=TRUE)
+
   
 
 ```
