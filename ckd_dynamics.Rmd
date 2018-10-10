@@ -170,7 +170,7 @@ describe_variable(prospective_data$creat_diff_rate, prospective_data$CKD)
 ```{r}
 boxplot(prospective_data$creat_diff_rate, prospective_data$CKD,
         names = c("С ХБП", "Без ХБП"),
-        ylab = "Скорость изменения креатинина, ммоль/л/мес")
+        ylab = "Скорость изменения креатинина, мкмоль/л/мес")
 ```
 
 
@@ -180,9 +180,10 @@ describe_variable(prospective_data$mdrd_diff_rate, prospective_data$CKD)
 ```
 
 ```{r}
+par(mar = c(5,6,3,3))
 boxplot(prospective_data$mdrd_diff_rate, prospective_data$CKD,
         names = c("С ХБП", "Без ХБП"),
-        ylab = "Скорость изменений MDRD СКФ, мл/мин/1.73м2/мес")
+        ylab = "Скорость изменений MDRD СКФ, \nмл/мин/1.73м2/мес")
 ```
 
 ```{r}
@@ -191,9 +192,10 @@ describe_variable(prospective_data$cocroft_diff_rate, prospective_data$CKD)
 ```
 
 ```{r}
+par(mar = c(5,6,3,3))
 boxplot(prospective_data$cocroft_diff_rate, prospective_data$CKD,
         names = c("С ХБП", "Без ХБП"),
-        ylab = "Скорость изменения клиренса креатинина, мл/мин/мес")
+        ylab = "Скорость изменения клиренса креатинина, \nмл/мин/мес")
 ```
 
 ```{r}
@@ -202,9 +204,10 @@ describe_variable(prospective_data$ckdepi_diff_rate, prospective_data$CKD)
 ```
 
 ```{r}
+par(mar = c(5,6,3,3))
 boxplot(prospective_data$ckdepi_diff_rate, prospective_data$CKD,
         names = c("С ХБП", "Без ХБП"),
-        ylab = "Скорость изменения CKD-EPI СКФ, мл/мин/1.73м2/мес")
+        ylab = "Скорость изменения CKD-EPI СКФ, \nмл/мин/1.73м2/мес")
 ```
 
 
